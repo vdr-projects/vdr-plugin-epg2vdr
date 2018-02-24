@@ -522,6 +522,9 @@ int cUpdate::takeSwitchTimer()
 
       cTimerThread timer(&sendEvent, evtSwitchTimer, switchTimers[timerid].start, this);
 
+      if (Epg2VdrConfig.switchTimerNotifyTime)
+         cTimerThread timer(&sendEvent, evtSwitchTimer, switchTimers[timerid].start - Epg2VdrConfig.switchTimerNotifyTime, this);
+
       // at last confirm it
 
       timerDb->setCharValue("ACTION", taAssumed);

@@ -830,13 +830,16 @@ int cUpdate::exitDb()
    return done;
 }
 
+//***************************************************************************
+// Send Event
+//***************************************************************************
+
 void cUpdate::sendEvent(int event, void* userData)
 {
    cUpdate* update = (cUpdate*)userData;
    cMutexLock lock(&update->eventHookMutex);
 
    update->eventHook.push(event);
-   update->waitCondition.Broadcast();
 }
 
 //***************************************************************************
@@ -1260,7 +1263,11 @@ void cUpdate::processEvents()
 
       switch (event)
       {
-         case evtSwitchTimer: switchTimerTrigger = yes; break;
+         case evtSwitchTimer:
+            tell(0, "Got evtSwitchTimer");
+            switchTimerTrigger = yes;
+            waitCondition.Broadcast();
+            break;
       }
    }
 }
