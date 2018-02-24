@@ -1971,4 +1971,6 @@ void cTimerThread::Action()
    }
 
    tell(1, "Info: Finished timer thread");
+
+   delete this;   // :o :o ;)
 }
