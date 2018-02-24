@@ -1925,12 +1925,13 @@ int urlUnescape(char* dst, const char* src, int normalize)
 // Timer Thread
 //***************************************************************************
 
-cTimerThread::cTimerThread(sendEventFct fct, int aEvent, time_t aTime, void* aUserData)
+cTimerThread::cTimerThread(sendEventFct fct, int aEvent, time_t aTime, void* aUserData, bool aSelfDistroy)
 {
    sendEvent = fct;
    event = aEvent;
    theTime = aTime;
    userData = aUserData;
+   selfdetroy = aSelfDistroy;
 
    stop = no;
    Start();
@@ -1953,6 +1954,8 @@ void cTimerThread::Action()
 {
    cMutex mutex;
 
+   tell(1, "Info: Started timer thread, event (%d) scheduled for '%s'", event, l2pTime(theTime).c_str());
+
    stop = no;
    mutex.Lock();
 
@@ -1965,12 +1968,13 @@ void cTimerThread::Action()
       meanwhile();
    }
 
-   if (time(0) >= theTime)
+   if (time(0) >= theTime && sendEvent)
    {
       sendEvent(event, userData);
    }
 
    tell(1, "Info: Finished timer thread");
 
-   delete this;   // :o :o ;)
+   if (selfdetroy)
+      delete this;   // :o :o ;)
 }

@@ -520,10 +520,12 @@ int cUpdate::takeSwitchTimer()
 
       // and register timer for it
 
-      new cTimerThread(&sendEvent, evtSwitchTimer, switchTimers[timerid].start, this);
+      new cTimerThread(&sendEvent, evtSwitchTimer,
+                       switchTimers[timerid].start, this, yes /*selfDistroy*/);
 
       if (Epg2VdrConfig.switchTimerNotifyTime)
-         new cTimerThread(&sendEvent, evtSwitchTimer, switchTimers[timerid].start - Epg2VdrConfig.switchTimerNotifyTime, this);
+         new cTimerThread(&sendEvent, evtSwitchTimer,
+                          switchTimers[timerid].start - Epg2VdrConfig.switchTimerNotifyTime, this, yes /*selfDistroy*/);
 
       // at last confirm it
 

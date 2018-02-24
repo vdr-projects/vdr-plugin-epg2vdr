@@ -423,7 +423,7 @@ class cTimerThread : public cThread
 
       typedef void (*sendEventFct)(int event, void* userData);
 
-      cTimerThread(sendEventFct fct, int aEvent, time_t aTime, void* aUserData = 0);
+      cTimerThread(sendEventFct fct, int aEvent, time_t aTime, void* aUserData = 0, bool aSelfDistroy = no);
 
       int __attribute__ ((format(printf, 3, 4))) notify(int event, const char* format = 0, ...);
 
@@ -438,6 +438,7 @@ class cTimerThread : public cThread
       int event;
       time_t theTime;
       void* userData;
+      bool selfdetroy;
       cCondVar waitCondition;
       int stop;
 

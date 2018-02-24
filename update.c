@@ -840,6 +840,7 @@ void cUpdate::sendEvent(int event, void* userData)
    cMutexLock lock(&update->eventHookMutex);
 
    update->eventHook.push(event);
+   tell(0, "sendEvent(%d)", event);
 }
 
 //***************************************************************************
