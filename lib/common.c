@@ -1938,15 +1938,6 @@ cTimerThread::cTimerThread(sendEventFct fct, int aEvent, time_t aTime, void* aUs
 }
 
 //***************************************************************************
-// Meanwhile
-//***************************************************************************
-
-int cTimerThread::meanwhile()
-{
-   return done;
-}
-
-//***************************************************************************
 // Action
 //***************************************************************************
 
@@ -1963,9 +1954,7 @@ void cTimerThread::Action()
    {
       // loop every 10 seconds
 
-      waitCondition.TimedWait(mutex, 10*1000);
-
-      meanwhile();
+      waitCondition.TimedWait(mutex, (theTime - time(0)) * 1000);
    }
 
    if (time(0) >= theTime && sendEvent)

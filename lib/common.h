@@ -430,7 +430,6 @@ class cTimerThread : public cThread
    protected:
 
       virtual void Action();
-      virtual int meanwhile();
 
       int event;
       time_t theTime;
