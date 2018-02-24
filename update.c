@@ -841,7 +841,7 @@ void cUpdate::sendEvent(int event, void* userData)
 
    update->eventHook.push(event);
    tell(0, "sendEvent(%d)", event);
-   waitCondition.Broadcast();
+   update->waitCondition.Broadcast();
 }
 
 //***************************************************************************
