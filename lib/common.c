@@ -1932,8 +1932,8 @@ cTimerThread::cTimerThread(sendEventFct fct, int aEvent, time_t aTime, void* aUs
    theTime = aTime;
    userData = aUserData;
    selfdetroy = aSelfDistroy;
+   active = no;
 
-   stop = no;
    Start();
 }
 
@@ -1954,12 +1954,12 @@ void cTimerThread::Action()
 {
    cMutex mutex;
 
+   active = yes;
+
+   mutex.Lock();
    tell(1, "Info: Started timer thread, event (%d) scheduled for '%s'", event, l2pTime(theTime).c_str());
 
-   stop = no;
-   mutex.Lock();
-
-   while (time(0) < theTime && Running() && !stop)
+   while (time(0) < theTime && Running() && active)
    {
       // loop every 10 seconds
 
@@ -1969,12 +1969,12 @@ void cTimerThread::Action()
    }
 
    if (time(0) >= theTime && sendEvent)
-   {
       sendEvent(event, userData);
-   }
 
    tell(1, "Info: Finished timer thread");
 
-   if (selfdetroy)
-      delete this;   // :o :o ;)
+   active = no;
+
+   // if (selfdetroy)
+   //    delete this;   // :o :o ;)
 }

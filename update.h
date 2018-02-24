@@ -311,6 +311,7 @@ class cUpdate : public cThread, public cStatus, public cParameters
       std::queue<int> eventHook;
       cMutex eventHookMutex;
 
+      std::list<cTimerThread*> timerThreads;
       static void sendEvent(int event, void* userData);
 
       static const char* auxFields[];

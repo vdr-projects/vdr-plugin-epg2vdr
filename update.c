@@ -1271,6 +1271,19 @@ void cUpdate::processEvents()
             break;
       }
    }
+
+   for (auto it = timerThreads.begin(); it != timerThreads.end(); )
+   {
+      if (!(*it)->isActive())
+      {
+         delete *it;
+         it = timerThreads.erase(it);
+      }
+      else
+      {
+         it++;
+      }
+   }
 }
 
 //***************************************************************************

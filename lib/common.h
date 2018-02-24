@@ -425,10 +425,7 @@ class cTimerThread : public cThread
 
       cTimerThread(sendEventFct fct, int aEvent, time_t aTime, void* aUserData = 0, bool aSelfDistroy = no);
 
-      int __attribute__ ((format(printf, 3, 4))) notify(int event, const char* format = 0, ...);
-
-      int startNotifyThread(int timeout);
-      int stopNotifyThread();
+      int isActive() { return active; }
 
    protected:
 
@@ -440,7 +437,7 @@ class cTimerThread : public cThread
       void* userData;
       bool selfdetroy;
       cCondVar waitCondition;
-      int stop;
+      int active;
 
       sendEventFct sendEvent;
 };
