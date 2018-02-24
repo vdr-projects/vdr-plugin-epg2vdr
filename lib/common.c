@@ -1919,3 +1919,56 @@ int urlUnescape(char* dst, const char* src, int normalize)
 
    return (dst - org_dst) - 1;
 }
+
+//***************************************************************************
+//***************************************************************************
+// Timer Thread
+//***************************************************************************
+
+cTimerThread::cTimerThread(sendEventFct fct, int aEvent, time_t aTime, void* aUserData)
+{
+   sendEvent = fct;
+   event = aEvent;
+   theTime = aTime;
+   userData = aUserData;
+
+   stop = no;
+   Start();
+}
+
+//***************************************************************************
+// Meanwhile
+//***************************************************************************
+
+int cTimerThread::meanwhile()
+{
+   return done;
+}
+
+//***************************************************************************
+// Action
+//***************************************************************************
+
+void cTimerThread::Action()
+{
+   cMutex mutex;
+
+   stop = no;
+   mutex.Lock();
+
+   while (time(0) < theTime && Running() && !stop)
+   {
+      // loop every 10 seconds
+
+      waitCondition.TimedWait(mutex, 10*1000);
+
+      meanwhile();
+   }
+
+   if (time(0) >= theTime)
+   {
+      sendEvent(event, userData);
+   }
+
+   tell(1, "Info: Finished timer thread");
+}

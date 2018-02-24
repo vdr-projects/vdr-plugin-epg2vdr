@@ -93,6 +93,7 @@ cUpdate::cUpdate(cPluginEPG2VDR* aPlugin)
    manualTrigger = no;
    videoBasePath = 0;
    dbReconnectTriggered = no;
+   switchTimerTrigger = no;
 
    fullreload = no;
    epgdBusy = yes;
@@ -829,6 +830,15 @@ int cUpdate::exitDb()
    return done;
 }
 
+void cUpdate::sendEvent(int event, void* userData)
+{
+   cUpdate* update = (cUpdate*)userData;
+   cMutexLock lock(&update->eventHookMutex);
+
+   update->eventHook.push(event);
+   update->waitCondition.Broadcast();
+}
+
 //***************************************************************************
 // Check Connection
 //***************************************************************************
@@ -1239,6 +1249,22 @@ void cUpdate::Stop()
    Cancel(10);                   // wait up to 10 seconds for thread was stopping
 }
 
+void cUpdate::processEvents()
+{
+   cMutexLock lock(&eventHookMutex);
+
+   while (!eventHook.empty())
+   {
+      int event = eventHook.front();
+      eventHook.pop();
+
+      switch (event)
+      {
+         case evtSwitchTimer: switchTimerTrigger = yes; break;
+      }
+   }
+}
+
 //***************************************************************************
 // Action
 //***************************************************************************
@@ -1265,6 +1291,10 @@ void cUpdate::Action()
 
       waitCondition.TimedWait(mutex, 60*1000);
 
+      // first process events
+
+      processEvents();
+
       // we pass here at least once per minute ...
 
       if (checkConnection(reconnectTimeout) != success)
@@ -1272,7 +1302,8 @@ void cUpdate::Action()
 
       // switch timer
 
-      checkSwitchTimer();
+      if (switchTimerTrigger)
+         checkSwitchTimer();
 
       // recording stuff
 

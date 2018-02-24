@@ -414,6 +414,37 @@ class LogDuration
 };
 
 //***************************************************************************
+// Timer Thread
+//***************************************************************************
+
+class cTimerThread : public cThread
+{
+   public:
+
+      typedef void (*sendEventFct)(int event, void* userData);
+
+      cTimerThread(sendEventFct fct, int aEvent, time_t aTime, void* aUserData = 0);
+
+      int __attribute__ ((format(printf, 3, 4))) notify(int event, const char* format = 0, ...);
+
+      int startNotifyThread(int timeout);
+      int stopNotifyThread();
+
+   protected:
+
+      virtual void Action();
+      virtual int meanwhile();
+
+      int event;
+      time_t theTime;
+      void* userData;
+      cCondVar waitCondition;
+      int stop;
+
+      sendEventFct sendEvent;
+};
+
+//***************************************************************************
 // Semaphore
 //***************************************************************************
 

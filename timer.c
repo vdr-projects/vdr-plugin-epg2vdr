@@ -86,6 +86,8 @@ int cUpdate::checkSwitchTimer()
       it = switchTimers.erase(it);
    }
 
+   switchTimerTrigger = no;
+
    return done;
 }
 
@@ -515,6 +517,12 @@ int cUpdate::takeSwitchTimer()
       switchTimers[timerid].channelId = timerDb->getStrValue("CHANNELID");
       switchTimers[timerid].start = timerDb->getIntValue("_STARTTIME");
       switchTimers[timerid].notified = no;
+
+      // and register timer for it
+
+      cTimerThread timer(&sendEvent, evtSwitchTimer, switchTimers[timerid].start, this);
+
+      // at last confirm it
 
       timerDb->setCharValue("ACTION", taAssumed);
       timerDb->setCharValue("STATE", tsPending);
