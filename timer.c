@@ -31,6 +31,7 @@ int cUpdate::checkSwitchTimer()
          {
             char* buf;
             asprintf(&buf, "Switching in %ld seconds to '%s'", swTimer->start-time(0), swTimer->channelId.c_str());
+            tell(0, "Debug: %s", buf);
             Skins.Message(mtInfo, buf);
             free(buf);
             swTimer->notified = yes;
@@ -515,7 +516,7 @@ int cUpdate::takeSwitchTimer()
 
       switchTimers[timerid].eventId = timerDb->getIntValue("EVENTID");
       switchTimers[timerid].channelId = timerDb->getStrValue("CHANNELID");
-      switchTimers[timerid].start = timerDb->getIntValue("_STARTTIME");
+      switchTimers[timerid].start = (timerDb->getIntValue("_STARTTIME") * 60) / 60; // cut seconds
       switchTimers[timerid].notified = no;
 
       // and register timer for it
