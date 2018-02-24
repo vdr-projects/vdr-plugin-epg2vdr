@@ -31,8 +31,7 @@ int cUpdate::checkSwitchTimer()
          {
             char* buf;
             asprintf(&buf, "Switching in %ld seconds to '%s'", swTimer->start-time(0), swTimer->channelId.c_str());
-            tell(0, "Debug: %s", buf);
-            Skins.Message(mtInfo, buf);
+            Skins.QueueMessage(mtInfo, buf);
             free(buf);
             swTimer->notified = yes;
          }
