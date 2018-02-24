@@ -1948,7 +1948,7 @@ void cTimerThread::Action()
    active = yes;
 
    mutex.Lock();
-   tell(1, "Info: Started timer thread, event (%d) scheduled for '%s'", event, l2pTime(theTime).c_str());
+   tell(3, "Info: Started timer thread, event (%d) scheduled for '%s'", event, l2pTime(theTime).c_str());
 
    while (time(0) < theTime && Running() && active)
    {
@@ -1960,7 +1960,7 @@ void cTimerThread::Action()
    if (time(0) >= theTime && sendEvent)
       sendEvent(event, userData);
 
-   tell(1, "Info: Finished timer thread");
+   tell(3, "Info: Finished timer thread");
 
    active = no;
 

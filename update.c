@@ -840,7 +840,7 @@ void cUpdate::sendEvent(int event, void* userData)
    cMutexLock lock(&update->eventHookMutex);
 
    update->eventHook.push(event);
-   tell(0, "sendEvent(%d)", event);
+   tell(3, "sendEvent(%d)", event);
    update->waitCondition.Broadcast();
 }
 
@@ -1266,9 +1266,10 @@ void cUpdate::processEvents()
       switch (event)
       {
          case evtSwitchTimer:
-            tell(0, "Got evtSwitchTimer");
+         {
             switchTimerTrigger = yes;
             break;
+         }
       }
    }
 

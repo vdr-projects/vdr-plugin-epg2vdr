@@ -737,7 +737,7 @@ int cMenuDb::createSwitchTimer(const cEvent* event)
 
    cDbRow* timerRow = newTimerRowFromEvent(event);
 
-   timerRow->setValue("STARTTIME", timerRow->getIntValue("STARTTIME"));
+   timerRow->setValue("STARTTIME", l2hhmm(timerRow->getIntValue("_STARTTIME")));
    createTimer(timerRow, Epg2VdrConfig.uuid, ttView);
 
    tell(0, "Switch timer for '%s' at '%s' created",
