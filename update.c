@@ -841,6 +841,7 @@ void cUpdate::sendEvent(int event, void* userData)
 
    update->eventHook.push(event);
    tell(0, "sendEvent(%d)", event);
+   waitCondition.Broadcast();
 }
 
 //***************************************************************************
@@ -1267,7 +1268,6 @@ void cUpdate::processEvents()
          case evtSwitchTimer:
             tell(0, "Got evtSwitchTimer");
             switchTimerTrigger = yes;
-            waitCondition.Broadcast();
             break;
       }
    }
