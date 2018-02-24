@@ -518,6 +518,9 @@ int cUpdate::takeSwitchTimer()
       switchTimers[timerid].start = (timerDb->getIntValue("_STARTTIME") * 60) / 60; // cut seconds
       switchTimers[timerid].notified = no;
 
+      tell(0, "'%s' - '%s'", l2pTime(timerDb->getIntValue("_STARTTIME")).c_str(),
+           l2pTime((timerDb->getIntValue("_STARTTIME") * 60) / 60).c_str());
+
       // and register timer for it
 
       timerThreads.push_back(new cTimerThread(&sendEvent, evtSwitchTimer,
