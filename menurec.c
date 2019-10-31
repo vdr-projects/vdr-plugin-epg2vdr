@@ -25,45 +25,47 @@ class cMenuDbRecordingItem : public cOsdItem
 {
    public:
 
-      cMenuDbRecordingItem(const cRecording *Recording, int Level);
-      ~cMenuDbRecordingItem();
+      cMenuDbRecordingItem(cMenuDb* db, const cRecording* Recording, int Level);
+      virtual ~cMenuDbRecordingItem();
+
       void IncrementCounter(bool New);
       const char* Name()            const { return name; }
       int Level()                   const { return level; }
       const cRecording* Recording() const { return recording; }
-      bool IsDirectory()            const { return name != NULL; }
-      void SetRecording(const cRecording *Recording) { recording = Recording; }
-      virtual void SetMenuItem(cSkinDisplayMenu *DisplayMenu, int Index, bool Current, bool Selectable);
+      bool IsDirectory()            const { return name; }
+      void SetRecording(const cRecording* Recording) { recording = Recording; }
+      virtual void SetMenuItem(cSkinDisplayMenu* DisplayMenu, int Index, bool Current, bool Selectable);
 
    private:
 
-      const cRecording *recording;
+      const cRecording* recording {nullptr};
       int level;
-      char *name;
+      char* name {nullptr};
       int totalEntries, newEntries;
+      cMenuDb* menuDb {nullptr};
 };
 
-cMenuDbRecordingItem::cMenuDbRecordingItem(const cRecording* Recording, int Level)
+cMenuDbRecordingItem::cMenuDbRecordingItem(cMenuDb* db, const cRecording* Recording, int Level)
 {
-  recording = Recording;
-  level = Level;
-  name = NULL;
-  totalEntries = newEntries = 0;
-  SetText(Recording->Title('\t', true, Level));
+   menuDb = db;
+   recording = Recording;
+   level = Level;
+   totalEntries = newEntries = 0;
+   SetText(Recording->Title('\t', true, Level));
 
-  // a folder?
+   // a folder?
 
-  if (*Text() == '\t')
-     name = strdup(Text() + 2); // 'Text() + 2' to skip the two '\t'
-  else
-  {
-     // -> actual recording
+   if (*Text() == '\t')
+      name = strdup(Text() + 2); // 'Text() + 2' to skip the two '\t'
+   else
+   {
+      // -> actual recording
 
-     int Usage = Recording->IsInUse();
+      int Usage = Recording->IsInUse();
 
-     if ((Usage & ruDst) != 0 && (Usage & (ruMove | ruCopy)) != 0)
-        SetSelectable(false);
-     }
+      if ((Usage & ruDst) != 0 && (Usage & (ruMove | ruCopy)) != 0)
+         SetSelectable(false);
+   }
 }
 
 cMenuDbRecordingItem::~cMenuDbRecordingItem()
@@ -95,25 +97,31 @@ cString cMenuDbRecordings::fileName;
 cMenuDbRecordings::cMenuDbRecordings(const char* Base, int Level, bool OpenSubMenus, const cRecordingFilter* Filter)
    : cOsdMenu(Base ? Base : tr("Recordings"), 9, 6, 6)
 {
+   menuDb = new cMenuDb;
+
    SetMenuCategory(mcRecording);
    base = Base ? strdup(Base) : NULL;
    level = Setup.RecordingDirs ? Level : -1;
    filter = Filter;
    helpKeys = -1;
    Display(); // this keeps the higher level menus from showing up briefly when pressing 'Back' during replay
-   Set();
+
+   if (menuDb->dbConnected())
+   {
+      Set();
+   }
 
    if (Current() < 0)
       SetCurrent(First());
 
-   else if (OpenSubMenus && (cReplayControl::LastReplayed() || *path || *fileName))
-   {
-      if (!*path || Level < strcountchr(path, FOLDERDELIMCHAR))
-      {
-         if (Open(true))
-            return;
-      }
-   }
+   // else if (OpenSubMenus && (cReplayControl::LastReplayed() || *path || *fileName))
+   // {
+   //    if (!*path || Level < strcountchr(path, FOLDERDELIMCHAR))
+   //    {
+   //       if (Open(true))
+   //          return;
+   //    }
+   // }
 
    Display();
    SetHelpKeys();
@@ -123,14 +131,17 @@ cMenuDbRecordings::~cMenuDbRecordings()
 {
    cMenuDbRecordingItem* ri = (cMenuDbRecordingItem*)Get(Current());
 
-   if (ri)
-   {
-      if (!ri->IsDirectory())
-         SetRecording(ri->Recording()->FileName());
-   }
+   if (ri && !ri->IsDirectory())
+      SetRecording(ri->Recording()->FileName());
+
+   delete menuDb;
 
    free(base);
 }
+
+//***************************************************************************
+//
+//***************************************************************************
 
 void cMenuDbRecordings::SetHelpKeys(void)
 {
@@ -159,14 +170,54 @@ void cMenuDbRecordings::SetHelpKeys(void)
   }
 }
 
+//***************************************************************************
+//
+//***************************************************************************
+
 void cMenuDbRecordings::Set(bool Refresh)
 {
    if (!cRecordings::GetRecordingsRead(recordingsStateKey))
       return ;
 
    recordingsStateKey.Remove();
-   const char *CurrentRecording = *fileName ? *fileName : cReplayControl::LastReplayed();
-   cRecordings *Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey); // write access is necessary for sorting!
+   cRecordings* Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey); // write access is necessary for sorting!
+
+   Clear();
+
+   menuDb->recordingListDb->clear();
+
+   for (int res = menuDb->selectRecordings->find(); res; res = menuDb->selectRecordings->fetch())
+   {
+      char* fileName {nullptr};
+      asprintf(&fileName, "%s/%s", cVideoDirectory::Name(), menuDb->recordingListDb->getStrValue("PATH"));
+      const cRecording* recording = Recordings->GetByName(fileName);
+
+      if (recording)
+         Add(new cMenuDbRecordingItem(menuDb, recording, 0));
+      else
+         tell(0, "Fatal: Recording for file '%s' not found", fileName);
+
+      free(fileName);
+   }
+
+   menuDb->selectRecordings->freeResult();
+
+   recordingsStateKey.Remove(false); // sorting doesn't count as a real modification
+
+   if (Refresh)
+      Display();
+
+   return ;
+
+   /*
+   // ------------------------------------------------------
+
+   if (!cRecordings::GetRecordingsRead(recordingsStateKey))
+      return ;
+
+   recordingsStateKey.Remove();
+   const char* CurrentRecording = *fileName ? *fileName : cReplayControl::LastReplayed();
+   cRecordings* Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey); // write access is necessary for sorting!
    cMenuDbRecordingItem *LastItem = NULL;
 
    if (!CurrentRecording)
@@ -236,16 +287,21 @@ void cMenuDbRecordings::Set(bool Refresh)
 
    if (Refresh)
       Display();
+   */
 }
+
+//***************************************************************************
+//
+//***************************************************************************
 
 void cMenuDbRecordings::SetPath(const char *Path)
 {
-  path = Path;
+   path = Path;
 }
 
 void cMenuDbRecordings::SetRecording(const char *FileName)
 {
-  fileName = FileName;
+   fileName = FileName;
 }
 
 cString cMenuDbRecordings::DirectoryName(void)

@@ -34,22 +34,6 @@ cMenuDb::cMenuDb()
    recordingListDb = 0;
    useeventsDb = 0;
 
-   selectTimers = 0;
-   selectEventById = 0;
-   selectMaxUpdSp = 0;
-   selectTimerById = 0;
-   selectActiveVdrs = 0;
-   selectAllVdrs = 0;
-   selectAllUser = 0;
-   selectSearchTimers = 0;
-   selectSearchTimerByName = 0;
-
-   selectDoneTimerByStateTitleOrder = 0;
-   selectDoneTimerByStateTimeOrder = 0;
-   selectRecordingForEvent = 0;
-   selectRecordingForEventByLv = 0;
-   selectChannelFromMap = 0;
-
    webLoginEnabled = no;
    user = "@";
    startWithSched = no;
@@ -333,6 +317,23 @@ int cMenuDb::initDb()
    // select *
    //   from recordinglist where
    //      (state <> 'D' or state is null)
+   //      order by starttime
+
+   selectRecordings = new cDbStatement(recordingListDb);
+
+   selectRecordings->build("select ");
+   selectRecordings->bindAllOut();
+   selectRecordings->build(" from %s where ", recordingListDb->TableName());
+   selectRecordings->build(" (%s <> 'D' or %s is null)",
+                                  recordingListDb->getField("STATE")->getDbName(),
+                                  recordingListDb->getField("STATE")->getDbName());
+   selectRecordings->build(" order by %s", recordingListDb->getField("STARTTIME")->getDbName());
+
+   status += selectRecordings->prepare();
+
+   // select *
+   //   from recordinglist where
+   //      (state <> 'D' or state is null)
    //      and title like ?
    //      and shorttext like ?
 
@@ -464,6 +465,7 @@ int cMenuDb::exitDb()
       delete selectDoneTimerByStateTimeOrder;  selectDoneTimerByStateTimeOrder = 0;
       delete selectRecordingForEvent;          selectRecordingForEvent = 0;
       delete selectRecordingForEventByLv;      selectRecordingForEventByLv = 0;
+      delete selectRecordings;                 selectRecordings = 0;
       delete selectChannelFromMap;             selectChannelFromMap = 0;
 
       delete connection;           connection = 0;

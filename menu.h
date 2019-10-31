@@ -59,6 +59,7 @@ class cMenuDb : public cParameters
    friend class cEpgMenuSearchResult;
    friend class cMenuSetupEPG2VDR;
    friend class cMenuEpgScheduleItem;
+   friend class cMenuDbRecordings;
 
    public:
 
@@ -118,23 +119,24 @@ class cMenuDb : public cParameters
       cDbTable* recordingListDb;
       cDbTable* useeventsDb;
 
-      cDbStatement* selectTimers;
-      cDbStatement* selectEventById;
-      cDbStatement* selectMaxUpdSp;
-      cDbStatement* selectTimerById;
-      cDbStatement* selectActiveVdrs;
-      cDbStatement* selectAllVdrs;
-      cDbStatement* selectDoneTimerByState;
-      cDbStatement* selectAllUser;
-      cDbStatement* selectSearchTimers;
-      cDbStatement* selectSearchTimerByName;
-      cDbStatement* selectDoneTimerByStateTitleOrder;
-      cDbStatement* selectDoneTimerByStateTimeOrder;
-      cDbStatement* selectRecordingForEvent;
-      cDbStatement* selectRecordingForEventByLv;
-      cDbStatement* selectChannelFromMap;
+      cDbStatement* selectTimers {nullptr};
+      cDbStatement* selectEventById {nullptr};
+      cDbStatement* selectMaxUpdSp {nullptr};
+      cDbStatement* selectTimerById {nullptr};
+      cDbStatement* selectActiveVdrs {nullptr};
+      cDbStatement* selectAllVdrs {nullptr};
+      cDbStatement* selectDoneTimerByState {nullptr};
+      cDbStatement* selectAllUser {nullptr};
+      cDbStatement* selectSearchTimers {nullptr};
+      cDbStatement* selectSearchTimerByName {nullptr};
+      cDbStatement* selectDoneTimerByStateTitleOrder {nullptr};
+      cDbStatement* selectDoneTimerByStateTimeOrder {nullptr};
+      cDbStatement* selectRecordingForEvent {nullptr};
+      cDbStatement* selectRecordingForEventByLv {nullptr};
+      cDbStatement* selectRecordings {nullptr};
+      cDbStatement* selectChannelFromMap {nullptr};
 
-      cSearchTimer* search;
+      cSearchTimer* search {nullptr};
 
       cDbValue valueStartTime;
       cDbValue timerState;
@@ -572,11 +574,11 @@ class cMenuDbRecordings : public cOsdMenu
 
    private:
 
-      char *base;
+      char* base;
       int level;
       cStateKey recordingsStateKey;
       int helpKeys;
-      const cRecordingFilter *filter;
+      const cRecordingFilter* filter;
       static cString path;
       static cString fileName;
       void SetHelpKeys(void);
@@ -588,4 +590,6 @@ class cMenuDbRecordings : public cOsdMenu
       // eOSState Info(void);
       eOSState Sort(void);
       eOSState Commands(eKeys Key = kNone);
+
+      cMenuDb* menuDb {nullptr};
 };
