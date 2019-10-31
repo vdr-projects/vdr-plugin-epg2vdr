@@ -51,7 +51,10 @@ cMenuDbRecordingItem::cMenuDbRecordingItem(cMenuDb* db, const cRecording* Record
    recording = Recording;
    level = Level;
    totalEntries = newEntries = 0;
-   SetText(Recording->Title('\t', true, Level));
+
+   // SetText(Recording->Title('\t', true, Level));
+
+   SetText(menuDb->recordingListDb->getStrValue("TITLE"));
 
    // a folder?
 
@@ -193,7 +196,10 @@ void cMenuDbRecordings::Set(bool Refresh)
       const cRecording* recording = Recordings->GetByName(fileName);
 
       if (recording)
+      {
+         tell(0, "Added recording for file '%s'", fileName);
          Add(new cMenuDbRecordingItem(menuDb, recording, 0));
+      }
       else
          tell(0, "Fatal: Recording for file '%s' not found", fileName);
 

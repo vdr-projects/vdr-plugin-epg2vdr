@@ -60,6 +60,7 @@ class cMenuDb : public cParameters
    friend class cMenuSetupEPG2VDR;
    friend class cMenuEpgScheduleItem;
    friend class cMenuDbRecordings;
+   friend class cMenuDbRecordingItem;
 
    public:
 
