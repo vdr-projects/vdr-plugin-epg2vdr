@@ -563,34 +563,37 @@ class cMenuDbRecordings : public cOsdMenu
 {
    public:
 
-      cMenuDbRecordings(const char* Base = nullptr, int Level = 0, bool OpenSubMenus = false, const cRecordingFilter* Filter = nullptr);
+      cMenuDbRecordings(const char* Base = nullptr, int Level = 0, bool OpenSubMenus = false);
       virtual ~cMenuDbRecordings();
+
       virtual eOSState ProcessKey(eKeys Key);
-      static void SetPath(const char *Path);
-      static void SetRecording(const char *FileName);
+      static void SetPath(const char* Path);
+      static void SetRecording(const char* FileName);
 
    protected:
 
-      cString DirectoryName(void);
+      cString DirectoryName();
 
    private:
 
-      char* base;
-      int level;
-      cStateKey recordingsStateKey;
-      int helpKeys;
-      const cRecordingFilter* filter;
-      static cString path;
-      static cString fileName;
-      void SetHelpKeys(void);
-      void Set(bool Refresh = false);
+      void SetHelpKeys();
+      void LoadPlainList(bool Refresh = false);
       bool Open(bool OpenSubMenus = false);
-      eOSState Play(void);
-      eOSState Rewind(void);
-      // eOSState Delete(void);
-      // eOSState Info(void);
-      eOSState Sort(void);
+      eOSState Play();
+      eOSState Rewind();
+      // eOSState Delete();
+      // eOSState Info();
+      eOSState Sort();
       eOSState Commands(eKeys Key = kNone);
 
+      // data
+
       cMenuDb* menuDb {nullptr};
+
+      char* base {nullptr};
+      int level {-1};
+      int helpKeys {-1};
+      cStateKey recordingsStateKey;  // list lock
+      static cString path;
+      static cString fileName;
 };

@@ -39,9 +39,9 @@ class cMenuDbRecordingItem : public cOsdItem
    private:
 
       const cRecording* recording {nullptr};
-      int level;
+      int level {0};
       char* name {nullptr};
-      int totalEntries, newEntries;
+      int totalEntries {0}, newEntries {0};
       cMenuDb* menuDb {nullptr};
 };
 
@@ -50,9 +50,6 @@ cMenuDbRecordingItem::cMenuDbRecordingItem(cMenuDb* db, const cRecording* Record
    menuDb = db;
    recording = Recording;
    level = Level;
-   totalEntries = newEntries = 0;
-
-   // SetText(Recording->Title('\t', true, Level));
 
    SetText(menuDb->recordingListDb->getStrValue("TITLE"));
 
@@ -97,21 +94,20 @@ void cMenuDbRecordingItem::SetMenuItem(cSkinDisplayMenu *DisplayMenu, int Index,
 cString cMenuDbRecordings::path;
 cString cMenuDbRecordings::fileName;
 
-cMenuDbRecordings::cMenuDbRecordings(const char* Base, int Level, bool OpenSubMenus, const cRecordingFilter* Filter)
+cMenuDbRecordings::cMenuDbRecordings(const char* Base, int Level, bool OpenSubMenus)
    : cOsdMenu(Base ? Base : tr("Recordings"), 9, 6, 6)
 {
    menuDb = new cMenuDb;
 
    SetMenuCategory(mcRecording);
-   base = Base ? strdup(Base) : NULL;
+   base = Base ? strdup(Base) : nullptr;
    level = Setup.RecordingDirs ? Level : -1;
-   filter = Filter;
-   helpKeys = -1;
+
    Display(); // this keeps the higher level menus from showing up briefly when pressing 'Back' during replay
 
    if (menuDb->dbConnected())
    {
-      Set();
+      LoadPlainList();
    }
 
    if (Current() < 0)
@@ -177,13 +173,13 @@ void cMenuDbRecordings::SetHelpKeys(void)
 //
 //***************************************************************************
 
-void cMenuDbRecordings::Set(bool Refresh)
+void cMenuDbRecordings::LoadPlainList(bool Refresh)
 {
    if (!cRecordings::GetRecordingsRead(recordingsStateKey))
       return ;
 
    recordingsStateKey.Remove();
-   cRecordings* Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey); // write access is necessary for sorting!
+   const cRecordings* Recordings = cRecordings::GetRecordingsRead(recordingsStateKey);
 
    Clear();
 
@@ -208,7 +204,7 @@ void cMenuDbRecordings::Set(bool Refresh)
 
    menuDb->selectRecordings->freeResult();
 
-   recordingsStateKey.Remove(false); // sorting doesn't count as a real modification
+   recordingsStateKey.Remove(false);
 
    if (Refresh)
       Display();
@@ -339,7 +335,7 @@ bool cMenuDbRecordings::Open(bool OpenSubMenus)
         t = buffer;
      }
 
-     AddSubMenu(new cMenuDbRecordings(t, level + 1, OpenSubMenus, filter));
+     AddSubMenu(new cMenuDbRecordings(t, level + 1, OpenSubMenus));
      return true;
   }
 
@@ -478,19 +474,11 @@ eOSState cMenuDbRecordings::Commands(eKeys Key)
    return osContinue;
 }
 
-eOSState cMenuDbRecordings::Sort(void)
+eOSState cMenuDbRecordings::Sort()
 {
-  if (HasSubMenu())
-     return osContinue;
+   LoadPlainList();
 
-  if (const cMenuDbRecordingItem *ri = (cMenuDbRecordingItem *)Get(Current()))
-     SetRecording(ri->Recording()->FileName()); // makes sure the Recordings menu will reposition to the current recording
-
-  IncRecordingsSortMode(DirectoryName());
-  recordingsStateKey.Reset();
-  Set(true);
-
-  return osContinue;
+   return osContinue;
 }
 
 eOSState cMenuDbRecordings::ProcessKey(eKeys Key)
@@ -566,13 +554,13 @@ eOSState cMenuDbRecordings::ProcessKey(eKeys Key)
      }
   */
 
-  if (!HasSubMenu())
-  {
-     Set(true);
+  // if (!HasSubMenu())
+  // {
+  //    Set(true);
 
-     if (Key != kNone)
-        SetHelpKeys();
-  }
+  //    if (Key != kNone)
+  //       SetHelpKeys();
+  // }
 
   return state;
 }
