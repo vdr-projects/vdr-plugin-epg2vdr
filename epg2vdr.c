@@ -81,7 +81,8 @@ enum EpgMenuState
    emsDones,
    emsProgram,
    emsUpdate,
-   emsReload
+   emsReload,
+   emsRecordings
 };
 
 cEpgPluginMenu::cEpgPluginMenu(const char* title, cPluginEPG2VDR* aPlugin)
@@ -101,6 +102,7 @@ cEpgPluginMenu::cEpgPluginMenu(const char* title, cPluginEPG2VDR* aPlugin)
    }
 
    cOsdMenu::Add(new cOsdItem(hk(tr("Program")), (eOSState)emsProgram));
+   cOsdMenu::Add(new cOsdItem(hk(tr("Recordings")), (eOSState)emsRecordings));
    cOsdMenu::Add(new cOsdItem(hk(tr("Update")), (eOSState)emsUpdate));
    cOsdMenu::Add(new cOsdItem(hk(tr("Reload")), (eOSState)emsReload));
 
@@ -136,6 +138,12 @@ eOSState cEpgPluginMenu::ProcessKey(eKeys key)
       case emsProgram:
       {
          state = AddSubMenu(new cMenuEpgWhatsOn());
+         break;
+      }
+
+      case emsRecordings:
+      {
+         state = AddSubMenu(new cMenuDbRecordings());
          break;
       }
 

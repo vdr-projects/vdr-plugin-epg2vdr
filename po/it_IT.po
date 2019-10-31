@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: VDR 1.5.7\n"
 "Report-Msgid-Bugs-To: <vdr@jwendel.de>\n"
-"POT-Creation-Date: 2019-10-28 16:00+0100\n"
+"POT-Creation-Date: 2019-10-31 09:16+0100\n"
 "PO-Revision-Date: 2009-08-27 21:45+0100\n"
 "Last-Translator: Diego Pierotto <vdr-italian@tiscali.it>\n"
 "Language-Team:  <vdr@linuxtv.org>\n"
@@ -31,6 +31,9 @@ msgid "Timer Journal"
 msgstr ""
 
 msgid "Program"
+msgstr ""
+
+msgid "Recordings"
 msgstr ""
 
 #, fuzzy
@@ -180,6 +183,30 @@ msgstr ""
 msgid "Delete timer from journal?"
 msgstr ""
 
+msgid "Button$Open"
+msgstr ""
+
+msgid "Button$Edit"
+msgstr ""
+
+msgid "Commands"
+msgstr ""
+
+msgid "Button$Play"
+msgstr ""
+
+msgid "Button$Rewind"
+msgstr ""
+
+msgid "Button$Delete"
+msgstr ""
+
+msgid "Button$Info"
+msgstr ""
+
+msgid "Recording commands"
+msgstr ""
+
 msgid "Search matching Events"
 msgstr ""
 
@@ -229,9 +256,6 @@ msgid "Search results"
 msgstr ""
 
 msgid "Button$Schedule"
-msgstr ""
-
-msgid "Button$Info"
 msgstr ""
 
 msgid "Can't switch channel!"
@@ -331,9 +355,6 @@ msgid "Button$On/Off"
 msgstr ""
 
 msgid "Button$New"
-msgstr ""
-
-msgid "Button$Delete"
 msgstr ""
 
 msgid "Delete timer?"

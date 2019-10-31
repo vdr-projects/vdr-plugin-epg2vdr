@@ -5,8 +5,7 @@
  *
  */
 
-#ifndef __EPG2VDR_MENU_H
-#define __EPG2VDR_MENU_H
+#pragma once
 
 #include <vdr/osdbase.h>
 #include <vdr/menuitems.h>
@@ -550,6 +549,43 @@ class cMenuEpgMatchRecordings : public cOsdMenu
       virtual eOSState ProcessKey(eKeys Key);
 };
 
+
+//***************************************************************************
+// class cMenuDbRecordings
 //***************************************************************************
 
-#endif  // __EPG2VDR_MENU_H
+class cRecordingFilter;
+
+class cMenuDbRecordings : public cOsdMenu
+{
+   public:
+
+      cMenuDbRecordings(const char* Base = nullptr, int Level = 0, bool OpenSubMenus = false, const cRecordingFilter* Filter = nullptr);
+      virtual ~cMenuDbRecordings();
+      virtual eOSState ProcessKey(eKeys Key);
+      static void SetPath(const char *Path);
+      static void SetRecording(const char *FileName);
+
+   protected:
+
+      cString DirectoryName(void);
+
+   private:
+
+      char *base;
+      int level;
+      cStateKey recordingsStateKey;
+      int helpKeys;
+      const cRecordingFilter *filter;
+      static cString path;
+      static cString fileName;
+      void SetHelpKeys(void);
+      void Set(bool Refresh = false);
+      bool Open(bool OpenSubMenus = false);
+      eOSState Play(void);
+      eOSState Rewind(void);
+      // eOSState Delete(void);
+      // eOSState Info(void);
+      eOSState Sort(void);
+      eOSState Commands(eKeys Key = kNone);
+};

@@ -64,7 +64,7 @@ OBJS = $(PLUGIN).o \
        service.o update.o plgconfig.o parameters.o \
        timer.o recording.o recinfofile.o \
        status.o ttools.o svdrpclient.o \
-       menu.o menusched.o menutimers.o menudone.o menusearchtimer.o
+       menu.o menusched.o menutimers.o menudone.o menusearchtimer.o menurec.o
 
 LIBS  = $(HLIB)
 LIBS += -lrt -larchive -lcrypto

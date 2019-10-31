@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: VDR 1.5.7\n"
 "Report-Msgid-Bugs-To: <vdr@jwendel.de>\n"
-"POT-Creation-Date: 2019-10-28 16:00+0100\n"
+"POT-Creation-Date: 2019-10-31 09:16+0100\n"
 "PO-Revision-Date: 2009-08-27 21:40+0200\n"
 "Last-Translator: Klaus Schmidinger <kls@cadsoft.de>\n"
 "Language-Team: <vdr@linuxtv.org>\n"
@@ -27,6 +27,9 @@ msgstr "Timerhistorie"
 
 msgid "Program"
 msgstr "Programm"
+
+msgid "Recordings"
+msgstr ""
 
 #, fuzzy
 msgid "Update"
@@ -175,6 +178,30 @@ msgstr "Timerhistorie - Gelöscht"
 msgid "Delete timer from journal?"
 msgstr "Eintrag aus Timerhistorie löschen?"
 
+msgid "Button$Open"
+msgstr ""
+
+msgid "Button$Edit"
+msgstr ""
+
+msgid "Commands"
+msgstr ""
+
+msgid "Button$Play"
+msgstr ""
+
+msgid "Button$Rewind"
+msgstr ""
+
+msgid "Button$Delete"
+msgstr "Löschen"
+
+msgid "Button$Info"
+msgstr "Information"
+
+msgid "Recording commands"
+msgstr ""
+
 msgid "Search matching Events"
 msgstr "Wiederholungen"
 
@@ -225,9 +252,6 @@ msgstr "Suchergebnisse"
 
 msgid "Button$Schedule"
 msgstr "Programm"
-
-msgid "Button$Info"
-msgstr "Information"
 
 msgid "Can't switch channel!"
 msgstr "Umschalten nicht möglich!"
@@ -327,9 +351,6 @@ msgstr "An/Aus"
 
 msgid "Button$New"
 msgstr "Neu"
-
-msgid "Button$Delete"
-msgstr "Löschen"
 
 msgid "Delete timer?"
 msgstr "Timer löschen"
