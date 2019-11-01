@@ -110,9 +110,14 @@ cMenuDbRecordingFolderItem::cMenuDbRecordingFolderItem(cMenuDb* db, const char* 
       tmpRecording = nullptr;
    }
 
-   tmpRecording = new cRecording(name);
-   tmpRecording->ChangeName(name);
+   char* dummy;
+   asprintf(&dummy, "%s/%s", name, "2018-07-22.20.12.8-0.rec");
+
+   tmpRecording = new cRecording(dummy);
+   // tmpRecording->ChangeName(name);
    SetText(tmpRecording->Title());
+
+   free(dummy);
 }
 
 cMenuDbRecordingFolderItem::~cMenuDbRecordingFolderItem()
