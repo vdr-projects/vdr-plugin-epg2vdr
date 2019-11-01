@@ -49,9 +49,17 @@ cMenuDbRecordingItem::cMenuDbRecordingItem(cMenuDb* db, const cRecording* Record
 {
    menuDb = db;
    recording = Recording;
-   level = Level;
+   level = 0; // Level;
+   name = nullptr;
 
-   SetText(menuDb->recordingListDb->getStrValue("TITLE"));
+   for (const char* p = Recording->Title(); *p; p++)
+      if (*p == '~')
+         level++;
+
+   SetText(Recording->Title('\t', true, level));
+   tell(0, "Added recording for file '%s'", Recording->Title());
+
+   // SetText(menuDb->recordingListDb->getStrValue("TITLE"));
 
    // a folder?
 
@@ -70,15 +78,17 @@ cMenuDbRecordingItem::cMenuDbRecordingItem(cMenuDb* db, const cRecording* Record
 
 cMenuDbRecordingItem::~cMenuDbRecordingItem()
 {
-  free(name);
+   free(name);
 }
 
 void cMenuDbRecordingItem::IncrementCounter(bool New)
 {
-  totalEntries++;
-  if (New)
-     newEntries++;
-  SetText(cString::sprintf("%d\t\t%d\t%s", totalEntries, newEntries, name));
+   totalEntries++;
+
+   if (New)
+      newEntries++;
+
+   SetText(cString::sprintf("%d\t\t%d\t%s", totalEntries, newEntries, name));
 }
 
 void cMenuDbRecordingItem::SetMenuItem(cSkinDisplayMenu *DisplayMenu, int Index, bool Current, bool Selectable)
@@ -113,14 +123,14 @@ cMenuDbRecordings::cMenuDbRecordings(const char* Base, int Level, bool OpenSubMe
    if (Current() < 0)
       SetCurrent(First());
 
-   // else if (OpenSubMenus && (cReplayControl::LastReplayed() || *path || *fileName))
-   // {
-   //    if (!*path || Level < strcountchr(path, FOLDERDELIMCHAR))
-   //    {
-   //       if (Open(true))
-   //          return;
-   //    }
-   // }
+   else if (OpenSubMenus && (cReplayControl::LastReplayed() || *path || *fileName))
+   {
+      if (!*path || Level < strcountchr(path, FOLDERDELIMCHAR))
+      {
+         if (Open(true))
+            return;
+      }
+   }
 
    Display();
    SetHelpKeys();
@@ -179,7 +189,14 @@ void cMenuDbRecordings::LoadPlainList(bool Refresh)
       return ;
 
    recordingsStateKey.Remove();
-   const cRecordings* Recordings = cRecordings::GetRecordingsRead(recordingsStateKey);
+   // const cRecordings* Recordings = cRecordings::GetRecordingsRead(recordingsStateKey);
+   cRecordings *Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey);
+
+   if (!Recordings)
+   {
+      tell(0, "Fatal: Can't get recording lock");
+      return ;
+   }
 
    Clear();
 
@@ -193,8 +210,8 @@ void cMenuDbRecordings::LoadPlainList(bool Refresh)
 
       if (recording)
       {
-         tell(0, "Added recording for file '%s'", fileName);
-         Add(new cMenuDbRecordingItem(menuDb, recording, 0));
+         // tell(0, "Added recording for file '%s'", fileName);
+         Add(new cMenuDbRecordingItem(menuDb, recording, level));
       }
       else
          tell(0, "Fatal: Recording for file '%s' not found", fileName);
