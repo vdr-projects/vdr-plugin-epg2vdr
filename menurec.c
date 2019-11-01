@@ -17,21 +17,38 @@
 #include "menu.h"
 #include "ttools.h"
 
+class cMenuDbRecordingItemBase : public cOsdItem
+{
+   public:
+
+      cMenuDbRecordingItemBase() {}
+      virtual ~cMenuDbRecordingItemBase() { free(name); }
+
+      virtual const char* Name()            const { return name; }
+      virtual const cRecording* Recording() const = 0;
+      virtual bool IsDirectory()            const = 0;
+
+   protected:
+
+      char* name {nullptr};
+};
+
 //***************************************************************************
 // Class cMenuDbRecordingItem
 //***************************************************************************
 
-class cMenuDbRecordingItem : public cOsdItem
+class cMenuDbRecordingItem : public cMenuDbRecordingItemBase
 {
    public:
 
       cMenuDbRecordingItem(cMenuDb* db, const cRecording* Recording);
       virtual ~cMenuDbRecordingItem();
 
-      const char* Name()            const { return name; }
+
       int Level()                   const { return level; }
-      const cRecording* Recording() const { return recording; }
-      bool IsDirectory()            const { return false; }
+
+      const cRecording* Recording() const override { return recording; }
+      bool IsDirectory()            const override { return false; }
       void SetRecording(const cRecording* Recording) { recording = Recording; }
       virtual void SetMenuItem(cSkinDisplayMenu* DisplayMenu, int Index, bool Current, bool Selectable);
 
@@ -39,7 +56,6 @@ class cMenuDbRecordingItem : public cOsdItem
 
       const cRecording* recording {nullptr};
       int level {0};
-      char* name {nullptr};
       cMenuDb* menuDb {nullptr};
 };
 
@@ -66,7 +82,6 @@ cMenuDbRecordingItem::cMenuDbRecordingItem(cMenuDb* db, const cRecording* Record
 
 cMenuDbRecordingItem::~cMenuDbRecordingItem()
 {
-   free(name);
 }
 
 void cMenuDbRecordingItem::SetMenuItem(cSkinDisplayMenu *DisplayMenu, int Index, bool Current, bool Selectable)
@@ -79,7 +94,7 @@ void cMenuDbRecordingItem::SetMenuItem(cSkinDisplayMenu *DisplayMenu, int Index,
 // Class cMenuDbRecordingItem
 //***************************************************************************
 
-class cMenuDbRecordingFolderItem : public cOsdItem
+class cMenuDbRecordingFolderItem : public cMenuDbRecordingItemBase
 {
    public:
 
@@ -87,14 +102,14 @@ class cMenuDbRecordingFolderItem : public cOsdItem
       virtual ~cMenuDbRecordingFolderItem();
 
       void IncrementCounter(bool New);
-      const char* Name()            const { return name; }
-      bool IsDirectory()            const { return true; }
+
+      const cRecording* Recording() const override { return tmpRecording; }
+      bool IsDirectory()            const override { return true; }
       virtual void SetMenuItem(cSkinDisplayMenu* DisplayMenu, int Index, bool Current, bool Selectable);
 
    private:
 
       cRecording* tmpRecording {nullptr};
-      char* name {nullptr};
       int totalEntries {0}, newEntries {0};
       cMenuDb* menuDb {nullptr};
 };
@@ -122,7 +137,6 @@ cMenuDbRecordingFolderItem::cMenuDbRecordingFolderItem(cMenuDb* db, const char* 
 
 cMenuDbRecordingFolderItem::~cMenuDbRecordingFolderItem()
 {
-   free(name);
    delete tmpRecording;
 }
 
@@ -173,10 +187,10 @@ cMenuDbRecordings::cMenuDbRecordings(const char* Base, int Level, bool OpenSubMe
 
 cMenuDbRecordings::~cMenuDbRecordings()
 {
-   cMenuDbRecordingItem* ri = (cMenuDbRecordingItem*)Get(Current());
+   // cMenuDbRecordingItem* ri = (cMenuDbRecordingItem*)Get(Current());
 
-   if (ri && !ri->IsDirectory())
-      SetRecording(ri->Recording()->FileName());
+   // if (ri && !ri->IsDirectory())
+   //    SetRecording(ri->Recording()->FileName());
 
    delete menuDb;
 
@@ -189,7 +203,7 @@ cMenuDbRecordings::~cMenuDbRecordings()
 
 void cMenuDbRecordings::SetHelpKeys(void)
 {
-  cMenuDbRecordingItem* ri = (cMenuDbRecordingItem*)Get(Current());
+  cMenuDbRecordingItemBase* ri = (cMenuDbRecordingItemBase*)Get(Current());
   int NewHelpKeys = 0;
 
   if (ri)
@@ -405,7 +419,7 @@ cString cMenuDbRecordings::DirectoryName(void)
 
 bool cMenuDbRecordings::Open(bool OpenSubMenus)
 {
-  cMenuDbRecordingItem* ri = (cMenuDbRecordingItem*)Get(Current());
+  cMenuDbRecordingItemBase* ri = (cMenuDbRecordingItemBase*)Get(Current());
 
   if (ri && ri->IsDirectory() && (!*path || strcountchr(path, FOLDERDELIMCHAR) > 0))
   {
@@ -427,7 +441,7 @@ bool cMenuDbRecordings::Open(bool OpenSubMenus)
 
 eOSState cMenuDbRecordings::Play(void)
 {
-  cMenuDbRecordingItem* ri = (cMenuDbRecordingItem*)Get(Current());
+  cMenuDbRecordingItemBase* ri = (cMenuDbRecordingItemBase*)Get(Current());
 
   if (ri)
   {
@@ -448,7 +462,7 @@ eOSState cMenuDbRecordings::Rewind(void)
    if (HasSubMenu() || Count() == 0)
       return osContinue;
 
-   cMenuDbRecordingItem *ri = (cMenuDbRecordingItem *)Get(Current());
+   cMenuDbRecordingItemBase *ri = (cMenuDbRecordingItemBase*)Get(Current());
 
    if (ri && !ri->IsDirectory())
    {
@@ -541,7 +555,7 @@ eOSState cMenuDbRecordings::Commands(eKeys Key)
    if (HasSubMenu() || Count() == 0)
       return osContinue;
 
-   cMenuDbRecordingItem *ri = (cMenuDbRecordingItem *)Get(Current());
+   cMenuDbRecordingItemBase* ri = (cMenuDbRecordingItemBase*)Get(Current());
 
    if (ri && !ri->IsDirectory())
    {
