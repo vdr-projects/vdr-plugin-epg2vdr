@@ -111,7 +111,7 @@ cMenuDbRecordingFolderItem::cMenuDbRecordingFolderItem(cMenuDb* db, const char* 
    }
 
    tmpRecording = new cRecording(name);
-   // tmpRecording->ChangeName(name);
+   tmpRecording->ChangeName(name);
    SetText(tmpRecording->Title());
 }
 
