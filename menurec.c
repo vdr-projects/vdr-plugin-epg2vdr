@@ -133,7 +133,7 @@ cMenuDbRecordingFolderItem::cMenuDbRecordingFolderItem(cMenuDb* db, const char* 
    // newEntries++;
 
    // SetText(tmpRecording->Title());
-   SetText(cString::sprintf("%d\t\t%d\t%s", totalEntries, newEntries, tmpRecording->Title()));
+   SetText(cString::sprintf("%d\t\t%d\t%s", totalEntries, newEntries, name));
 
    free(dummy);
 }
