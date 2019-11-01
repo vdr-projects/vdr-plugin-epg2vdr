@@ -110,8 +110,8 @@ cMenuDbRecordingFolderItem::cMenuDbRecordingFolderItem(cMenuDb* db, const char* 
       tmpRecording = nullptr;
    }
 
-   tmpRecording = new cRecording(title);
-   // tmpRecording->ChangeName(title);
+   tmpRecording = new cRecording(name);
+   // tmpRecording->ChangeName(name);
    SetText(tmpRecording->Title());
 }
 
@@ -147,7 +147,7 @@ cMenuDbRecordings::cMenuDbRecordings(const char* Base, int Level, bool OpenSubMe
 
    if (menuDb->dbConnected())
    {
-      LoadPlain();
+      LoadGrouped(); // LoadPlain();
    }
 
    if (Current() < 0)
