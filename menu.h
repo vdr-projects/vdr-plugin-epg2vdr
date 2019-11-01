@@ -143,6 +143,7 @@ class cMenuDb : public cParameters
       cDbValue valueStartTime;
       cDbValue timerState;
       cDbValue timerAction;
+      cDbValue groupCount;
 
       class cTimerInfo : public cListObject
       {

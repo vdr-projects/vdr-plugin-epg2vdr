@@ -53,6 +53,7 @@ cMenuDb::~cMenuDb()
 cDbFieldDef startTimeDef("starttime", "starttime", cDBS::ffInt, 0, cDBS::ftData);
 cDbFieldDef timerStateDef("state", "state", cDBS::ffAscii, 100, cDBS::ftData);
 cDbFieldDef timerActionDef("action", "action", cDBS::ffAscii, 100, cDBS::ftData);
+cDbFieldDef groupCountDef("GROUP_COUNT", "count(1)", cDBS::ffUInt, 0, cDBS::ftData);
 
 //***************************************************************************
 // initDb / exitDb
@@ -331,18 +332,21 @@ int cMenuDb::initDb()
 
    status += selectRecordings->prepare();
 
-   // select category, genre
+   // select category, genre, count(1)
    //   from recordinglist
    //     where
    //      (state <> 'D' or state is null)
    //     group by ifnull(category, 'unknown'), ifnull(genre, 'unknown')
    //     order by ifnull(category, 'unknown'), ifnull(genre, 'unknown')
 
+   groupCount.setField(&groupCountDef);
+
    selectRecordingsGrouped = new cDbStatement(recordingListDb);
 
    selectRecordingsGrouped->build("select ");
    selectRecordingsGrouped->bind("CATEGORY", cDBS::bndOut);
    selectRecordingsGrouped->bind("GENRE", cDBS::bndOut, ", ");
+   selectRecordingsGrouped->bind(&groupCount, cDBS::bndOut, ", ");
    selectRecordingsGrouped->build(" from %s where ", recordingListDb->TableName());
    selectRecordingsGrouped->build(" (%s <> 'D' or %s is null)",
                                   recordingListDb->getField("STATE")->getDbName(),

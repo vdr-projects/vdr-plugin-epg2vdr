@@ -96,7 +96,7 @@ class cMenuDbRecordingFolderItem : public cMenuDbRecordingItemBase
 {
    public:
 
-      cMenuDbRecordingFolderItem(cMenuDb* db, const char* title);
+      cMenuDbRecordingFolderItem(cMenuDb* db, const char* title, int count);
       virtual ~cMenuDbRecordingFolderItem();
 
       // void IncrementCounter(bool New);
@@ -113,10 +113,12 @@ class cMenuDbRecordingFolderItem : public cMenuDbRecordingItemBase
       cMenuDb* menuDb {nullptr};
 };
 
-cMenuDbRecordingFolderItem::cMenuDbRecordingFolderItem(cMenuDb* db, const char* title)
+cMenuDbRecordingFolderItem::cMenuDbRecordingFolderItem(cMenuDb* db, const char* title, int count)
 {
    menuDb = db;
    name = strdup(title);
+   totalEntries = count;
+   newEntries = 0;
 
    if (tmpRecording)
    {
@@ -128,11 +130,6 @@ cMenuDbRecordingFolderItem::cMenuDbRecordingFolderItem(cMenuDb* db, const char* 
    asprintf(&dummy, "\t%s/%s", name, "2000-01-01.00.00.0-0.rec");
 
    tmpRecording = new cRecording(dummy);
-
-   totalEntries++;
-   // newEntries++;
-
-   // SetText(tmpRecording->Title());
    SetText(cString::sprintf("%d\t\t%d\t%s", totalEntries, newEntries, name));
 
    free(dummy);
@@ -250,7 +247,7 @@ void cMenuDbRecordings::LoadGrouped(bool Refresh)
                menuDb->recordingListDb->getValue("GENRE")->isNull() ? "unknown" : menuDb->recordingListDb->getStrValue("GENRE"));
 
       tell(0, "Added recording folder '%s'", folderTitle);
-      Add(new cMenuDbRecordingFolderItem(menuDb, folderTitle));
+      Add(new cMenuDbRecordingFolderItem(menuDb, folderTitle, menuDb->groupCount.getIntValue()));
 
       free(folderTitle);
    }
