@@ -25,7 +25,7 @@ class cMenuDbRecordingItem : public cOsdItem
 {
    public:
 
-      cMenuDbRecordingItem(cMenuDb* db, const cRecording* Recording, int Level);
+      cMenuDbRecordingItem(cMenuDb* db, const cRecording* Recording);
       virtual ~cMenuDbRecordingItem();
 
       void IncrementCounter(bool New);
@@ -45,11 +45,10 @@ class cMenuDbRecordingItem : public cOsdItem
       cMenuDb* menuDb {nullptr};
 };
 
-cMenuDbRecordingItem::cMenuDbRecordingItem(cMenuDb* db, const cRecording* Recording, int Level)
+cMenuDbRecordingItem::cMenuDbRecordingItem(cMenuDb* db, const cRecording* Recording)
 {
    menuDb = db;
    recording = Recording;
-   level = 0; // Level;
    name = nullptr;
 
    for (const char* p = Recording->Title(); *p; p++)
@@ -211,7 +210,7 @@ void cMenuDbRecordings::LoadPlainList(bool Refresh)
       if (recording)
       {
          // tell(0, "Added recording for file '%s'", fileName);
-         Add(new cMenuDbRecordingItem(menuDb, recording, level));
+         Add(new cMenuDbRecordingItem(menuDb, recording));
       }
       else
          tell(0, "Fatal: Recording for file '%s' not found", fileName);
