@@ -135,6 +135,7 @@ class cMenuDb : public cParameters
       cDbStatement* selectRecordingForEvent {nullptr};
       cDbStatement* selectRecordingForEventByLv {nullptr};
       cDbStatement* selectRecordings {nullptr};
+      cDbStatement* selectRecordingsGrouped {nullptr};
       cDbStatement* selectChannelFromMap {nullptr};
 
       cSearchTimer* search {nullptr};
@@ -577,7 +578,8 @@ class cMenuDbRecordings : public cOsdMenu
    private:
 
       void SetHelpKeys();
-      void LoadPlainList(bool Refresh = false);
+      void LoadPlain(bool Refresh = false);
+      void LoadGrouped(bool Refresh = false);
       bool Open(bool OpenSubMenus = false);
       eOSState Play();
       eOSState Rewind();

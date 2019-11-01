@@ -28,11 +28,10 @@ class cMenuDbRecordingItem : public cOsdItem
       cMenuDbRecordingItem(cMenuDb* db, const cRecording* Recording);
       virtual ~cMenuDbRecordingItem();
 
-      void IncrementCounter(bool New);
       const char* Name()            const { return name; }
       int Level()                   const { return level; }
       const cRecording* Recording() const { return recording; }
-      bool IsDirectory()            const { return name; }
+      bool IsDirectory()            const { return false; }
       void SetRecording(const cRecording* Recording) { recording = Recording; }
       virtual void SetMenuItem(cSkinDisplayMenu* DisplayMenu, int Index, bool Current, bool Selectable);
 
@@ -41,7 +40,6 @@ class cMenuDbRecordingItem : public cOsdItem
       const cRecording* recording {nullptr};
       int level {0};
       char* name {nullptr};
-      int totalEntries {0}, newEntries {0};
       cMenuDb* menuDb {nullptr};
 };
 
@@ -64,15 +62,6 @@ cMenuDbRecordingItem::cMenuDbRecordingItem(cMenuDb* db, const cRecording* Record
 
    if (*Text() == '\t')
       name = strdup(Text() + 2); // 'Text() + 2' to skip the two '\t'
-   else
-   {
-      // -> actual recording
-
-      int Usage = Recording->IsInUse();
-
-      if ((Usage & ruDst) != 0 && (Usage & (ruMove | ruCopy)) != 0)
-         SetSelectable(false);
-   }
 }
 
 cMenuDbRecordingItem::~cMenuDbRecordingItem()
@@ -80,19 +69,61 @@ cMenuDbRecordingItem::~cMenuDbRecordingItem()
    free(name);
 }
 
-void cMenuDbRecordingItem::IncrementCounter(bool New)
-{
-   totalEntries++;
-
-   if (New)
-      newEntries++;
-
-   SetText(cString::sprintf("%d\t\t%d\t%s", totalEntries, newEntries, name));
-}
-
 void cMenuDbRecordingItem::SetMenuItem(cSkinDisplayMenu *DisplayMenu, int Index, bool Current, bool Selectable)
 {
-  if (!DisplayMenu->SetItemRecording(recording, Index, Current, Selectable, level, totalEntries, newEntries))
+  if (!DisplayMenu->SetItemRecording(recording, Index, Current, Selectable, level, 0, 0))
+     DisplayMenu->SetItem(Text(), Index, Current, Selectable);
+}
+
+//***************************************************************************
+// Class cMenuDbRecordingItem
+//***************************************************************************
+
+class cMenuDbRecordingFolderItem : public cOsdItem
+{
+   public:
+
+      cMenuDbRecordingFolderItem(cMenuDb* db, const char* title);
+      virtual ~cMenuDbRecordingFolderItem();
+
+      void IncrementCounter(bool New);
+      const char* Name()            const { return name; }
+      bool IsDirectory()            const { return true; }
+      virtual void SetMenuItem(cSkinDisplayMenu* DisplayMenu, int Index, bool Current, bool Selectable);
+
+   private:
+
+      cRecording* tmpRecording {nullptr};
+      char* name {nullptr};
+      int totalEntries {0}, newEntries {0};
+      cMenuDb* menuDb {nullptr};
+};
+
+cMenuDbRecordingFolderItem::cMenuDbRecordingFolderItem(cMenuDb* db, const char* title)
+{
+   menuDb = db;
+   name = strdup(title);
+
+   if (tmpRecording)
+   {
+      delete tmpRecording;
+      tmpRecording = nullptr;
+   }
+
+   tmpRecording = new cRecording(title);
+   // tmpRecording->ChangeName(title);
+   SetText(tmpRecording->Title());
+}
+
+cMenuDbRecordingFolderItem::~cMenuDbRecordingFolderItem()
+{
+   free(name);
+   delete tmpRecording;
+}
+
+void cMenuDbRecordingFolderItem::SetMenuItem(cSkinDisplayMenu *DisplayMenu, int Index, bool Current, bool Selectable)
+{
+  if (!DisplayMenu->SetItemRecording(tmpRecording, Index, Current, Selectable, 0, totalEntries, newEntries))
      DisplayMenu->SetItem(Text(), Index, Current, Selectable);
 }
 
@@ -116,7 +147,7 @@ cMenuDbRecordings::cMenuDbRecordings(const char* Base, int Level, bool OpenSubMe
 
    if (menuDb->dbConnected())
    {
-      LoadPlainList();
+      LoadPlain();
    }
 
    if (Current() < 0)
@@ -179,17 +210,48 @@ void cMenuDbRecordings::SetHelpKeys(void)
 }
 
 //***************************************************************************
-//
+// Load Grouped
 //***************************************************************************
 
-void cMenuDbRecordings::LoadPlainList(bool Refresh)
+void cMenuDbRecordings::LoadGrouped(bool Refresh)
+{
+   Clear();
+
+   menuDb->recordingListDb->clear();
+
+   for (int res = menuDb->selectRecordingsGrouped->find(); res; res = menuDb->selectRecordingsGrouped->fetch())
+   {
+      char* folderTitle {nullptr};
+
+      asprintf(&folderTitle, "%s / %s",
+               menuDb->recordingListDb->getValue("CATEGORY")->isNull() ? "unknown" : menuDb->recordingListDb->getStrValue("CATEGORY"),
+               menuDb->recordingListDb->getValue("GENRE")->isNull() ? "unknown" : menuDb->recordingListDb->getStrValue("GENRE"));
+
+      tell(0, "Added recording folder '%s'", folderTitle);
+      Add(new cMenuDbRecordingFolderItem(menuDb, folderTitle));
+
+      free(folderTitle);
+   }
+
+   menuDb->selectRecordingsGrouped->freeResult();
+
+   if (Refresh)
+      Display();
+
+   return ;
+}
+
+//***************************************************************************
+// Load Plain
+//***************************************************************************
+
+void cMenuDbRecordings::LoadPlain(bool Refresh)
 {
    if (!cRecordings::GetRecordingsRead(recordingsStateKey))
       return ;
 
    recordingsStateKey.Remove();
-   // const cRecordings* Recordings = cRecordings::GetRecordingsRead(recordingsStateKey);
-   cRecordings *Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey);
+   cRecordings* Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey);
 
    if (!Recordings)
    {
@@ -492,7 +554,7 @@ eOSState cMenuDbRecordings::Commands(eKeys Key)
 
 eOSState cMenuDbRecordings::Sort()
 {
-   LoadPlainList();
+   LoadPlain();
 
    return osContinue;
 }

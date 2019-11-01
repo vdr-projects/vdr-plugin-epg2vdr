@@ -331,6 +331,31 @@ int cMenuDb::initDb()
 
    status += selectRecordings->prepare();
 
+   // select category, genre
+   //   from recordinglist
+   //     where
+   //      (state <> 'D' or state is null)
+   //     group by ifnull(category, 'unknown'), ifnull(genre, 'unknown')
+   //     order by ifnull(category, 'unknown'), ifnull(genre, 'unknown')
+
+   selectRecordingsGrouped = new cDbStatement(recordingListDb);
+
+   selectRecordingsGrouped->build("select ");
+   selectRecordingsGrouped->bind("CATEGORY", cDBS::bndOut);
+   selectRecordingsGrouped->bind("GENRE", cDBS::bndOut);
+   selectRecordingsGrouped->build(" from %s where ", recordingListDb->TableName());
+   selectRecordingsGrouped->build(" (%s <> 'D' or %s is null)",
+                                  recordingListDb->getField("STATE")->getDbName(),
+                                  recordingListDb->getField("STATE")->getDbName());
+   selectRecordingsGrouped->build(" group by ifnull(%s, 'unknown'), ifnull(%s, 'unknown')",
+                                  recordingListDb->getField("CATEGORY")->getDbName(),
+                                  recordingListDb->getField("GENRE")->getDbName());
+   selectRecordingsGrouped->build(" order by ifnull(%s, 'unknown'), ifnull(%s, 'unknown')",
+                                  recordingListDb->getField("CATEGORY")->getDbName(),
+                                  recordingListDb->getField("GENRE")->getDbName());
+
+   status += selectRecordingsGrouped->prepare();
+
    // select *
    //   from recordinglist where
    //      (state <> 'D' or state is null)
@@ -466,6 +491,7 @@ int cMenuDb::exitDb()
       delete selectRecordingForEvent;          selectRecordingForEvent = 0;
       delete selectRecordingForEventByLv;      selectRecordingForEventByLv = 0;
       delete selectRecordings;                 selectRecordings = 0;
+      delete selectRecordingsGrouped;          selectRecordingsGrouped = 0;
       delete selectChannelFromMap;             selectChannelFromMap = 0;
 
       delete connection;           connection = 0;
