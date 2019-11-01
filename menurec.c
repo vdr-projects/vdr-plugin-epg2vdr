@@ -72,12 +72,10 @@ cMenuDbRecordingItem::cMenuDbRecordingItem(cMenuDb* db, const cRecording* Record
    SetText(Recording->Title('\t', true, level));
    tell(0, "Added recording for file '%s'", Recording->Title());
 
-   // SetText(menuDb->recordingListDb->getStrValue("TITLE"));
-
    // a folder?
 
-   if (*Text() == '\t')
-      name = strdup(Text() + 2); // 'Text() + 2' to skip the two '\t'
+   // if (*Text() == '\t')
+   //    name = strdup(Text() + 2); // 'Text() + 2' to skip the two '\t'
 }
 
 cMenuDbRecordingItem::~cMenuDbRecordingItem()
@@ -101,7 +99,7 @@ class cMenuDbRecordingFolderItem : public cMenuDbRecordingItemBase
       cMenuDbRecordingFolderItem(cMenuDb* db, const char* title);
       virtual ~cMenuDbRecordingFolderItem();
 
-      void IncrementCounter(bool New);
+      // void IncrementCounter(bool New);
 
       const cRecording* Recording() const override { return tmpRecording; }
       bool IsDirectory()            const override { return true; }
@@ -110,7 +108,8 @@ class cMenuDbRecordingFolderItem : public cMenuDbRecordingItemBase
    private:
 
       cRecording* tmpRecording {nullptr};
-      int totalEntries {0}, newEntries {0};
+      uint totalEntries {0};
+      uint newEntries {0};
       cMenuDb* menuDb {nullptr};
 };
 
@@ -126,11 +125,15 @@ cMenuDbRecordingFolderItem::cMenuDbRecordingFolderItem(cMenuDb* db, const char* 
    }
 
    char* dummy;
-   asprintf(&dummy, "%s/%s", name, "2018-07-22.20.12.8-0.rec");
+   asprintf(&dummy, "\t%s/%s", name, "2000-01-01.00.00.0-0.rec");
 
    tmpRecording = new cRecording(dummy);
-   // tmpRecording->ChangeName(name);
-   SetText(tmpRecording->Title());
+
+   totalEntries++;
+   // newEntries++;
+
+   // SetText(tmpRecording->Title());
+   SetText(cString::sprintf("%d\t\t%d\t%s", totalEntries, newEntries, tmpRecording->Title()));
 
    free(dummy);
 }
@@ -140,7 +143,7 @@ cMenuDbRecordingFolderItem::~cMenuDbRecordingFolderItem()
    delete tmpRecording;
 }
 
-void cMenuDbRecordingFolderItem::SetMenuItem(cSkinDisplayMenu *DisplayMenu, int Index, bool Current, bool Selectable)
+void cMenuDbRecordingFolderItem::SetMenuItem(cSkinDisplayMenu* DisplayMenu, int Index, bool Current, bool Selectable)
 {
   if (!DisplayMenu->SetItemRecording(tmpRecording, Index, Current, Selectable, 0, totalEntries, newEntries))
      DisplayMenu->SetItem(Text(), Index, Current, Selectable);
