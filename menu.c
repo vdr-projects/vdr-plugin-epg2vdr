@@ -342,7 +342,7 @@ int cMenuDb::initDb()
 
    selectRecordingsGrouped->build("select ");
    selectRecordingsGrouped->bind("CATEGORY", cDBS::bndOut);
-   selectRecordingsGrouped->bind("GENRE", cDBS::bndOut);
+   selectRecordingsGrouped->bind("GENRE", cDBS::bndOut, ", ");
    selectRecordingsGrouped->build(" from %s where ", recordingListDb->TableName());
    selectRecordingsGrouped->build(" (%s <> 'D' or %s is null)",
                                   recordingListDb->getField("STATE")->getDbName(),
