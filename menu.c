@@ -344,21 +344,38 @@ int cMenuDb::initDb()
    selectRecordingsGrouped = new cDbStatement(recordingListDb);
 
    selectRecordingsGrouped->build("select ");
-   selectRecordingsGrouped->bind("CATEGORY", cDBS::bndOut);
+   selectRecordingsGrouped->bind("GROUP", cDBS::bndOut);
+   selectRecordingsGrouped->bind("CATEGORY", cDBS::bndOut, ", ");
    selectRecordingsGrouped->bind("GENRE", cDBS::bndOut, ", ");
+   selectRecordingsGrouped->bind("NGENRE", cDBS::bndOut, ", ");
    selectRecordingsGrouped->bind(&groupCount, cDBS::bndOut, ", ");
    selectRecordingsGrouped->build(" from %s where ", recordingListDb->TableName());
    selectRecordingsGrouped->build(" (%s <> 'D' or %s is null)",
                                   recordingListDb->getField("STATE")->getDbName(),
                                   recordingListDb->getField("STATE")->getDbName());
-   selectRecordingsGrouped->build(" group by ifnull(%s, 'unknown'), ifnull(%s, 'unknown')",
-                                  recordingListDb->getField("CATEGORY")->getDbName(),
-                                  recordingListDb->getField("GENRE")->getDbName());
-   selectRecordingsGrouped->build(" order by ifnull(%s, 'unknown'), ifnull(%s, 'unknown')",
-                                  recordingListDb->getField("CATEGORY")->getDbName(),
-                                  recordingListDb->getField("GENRE")->getDbName());
+   selectRecordingsGrouped->build(" group by %s", recordingListDb->getField("GROUP")->getDbName());
+   selectRecordingsGrouped->build(" order by %s", recordingListDb->getField("GROUP")->getDbName());
 
    status += selectRecordingsGrouped->prepare();
+
+   // select *
+   //   from recordinglist where
+   //      (state <> 'D' or state is null)
+   //      and category = ?
+   //      order by starttime
+
+   selectRecordingByGroup = new cDbStatement(recordingListDb);
+
+   selectRecordingByGroup->build("select ");
+   selectRecordingByGroup->bindAllOut();
+   selectRecordingByGroup->build(" from %s where ", recordingListDb->TableName());
+   selectRecordingByGroup->build(" (%s <> 'D' or %s is null)",
+                                  recordingListDb->getField("STATE")->getDbName(),
+                                  recordingListDb->getField("STATE")->getDbName());
+   selectRecordingByGroup->bind("GROUP", cDBS::bndIn | cDBS::bndSet, " and ");
+   selectRecordingByGroup->build(" order by %s", recordingListDb->getField("STARTTIME")->getDbName());
+
+   status += selectRecordingByGroup->prepare();
 
    // select *
    //   from recordinglist where

@@ -136,6 +136,7 @@ class cMenuDb : public cParameters
       cDbStatement* selectRecordingForEventByLv {nullptr};
       cDbStatement* selectRecordings {nullptr};
       cDbStatement* selectRecordingsGrouped {nullptr};
+      cDbStatement* selectRecordingByGroup {nullptr};
       cDbStatement* selectChannelFromMap {nullptr};
 
       cSearchTimer* search {nullptr};
@@ -565,38 +566,32 @@ class cMenuDbRecordings : public cOsdMenu
 {
    public:
 
-      cMenuDbRecordings(const char* Base = nullptr, int Level = 0, bool OpenSubMenus = false);
+      cMenuDbRecordings(const char* Base = nullptr, int Level = 0, const char* Group = 0, bool OpenSubMenus = false);
       virtual ~cMenuDbRecordings();
 
       virtual eOSState ProcessKey(eKeys Key);
-      static void SetPath(const char* Path);
-      static void SetRecording(const char* FileName);
-
-   protected:
-
-      cString DirectoryName();
 
    private:
 
-      void SetHelpKeys();
       void LoadPlain(bool Refresh = false);
       void LoadGrouped(bool Refresh = false);
+      void LoadGroup(const char* group, bool Refresh = false);
+
       bool Open(bool OpenSubMenus = false);
       eOSState Play();
       eOSState Rewind();
-      // eOSState Delete();
-      // eOSState Info();
       eOSState Sort();
       eOSState Commands(eKeys Key = kNone);
+
+      void SetHelpKeys();
 
       // data
 
       cMenuDb* menuDb {nullptr};
 
       char* base {nullptr};
+      char* group {nullptr};
       int level {-1};
       int helpKeys {-1};
       cStateKey recordingsStateKey;  // list lock
-      static cString path;
-      static cString fileName;
 };

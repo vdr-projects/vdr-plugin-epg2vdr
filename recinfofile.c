@@ -170,6 +170,97 @@ int cEventDetails::updateToRow(cDbRow* row)
          tell(0, "Info: Field '%s' unhandled for info.epg2vdr", it->first.c_str());
    }
 
+   if (row->getValue("CATEGORY")->isEmpty())
+      row->setValue("CATEGORY", "unknown");
+
+   if (row->getValue("GENRE")->isEmpty())
+      row->setValue("GENRE", "unknown");
+
+   cDbValue* value = row->getValue("GENRE");
+
+   if (value)
+   {
+      // build normalized genre
+
+      if (strncasecmp(value->getStrValue(), "Action", 6) == 0)
+         row->setValue("NGENRE", "Action");
+      else if (strncasecmp(value->getStrValue(), "Digitaltrick", 12) == 0 ||
+               strncasecmp(value->getStrValue(), "Digitrick", 9) == 0 ||
+               strncasecmp(value->getStrValue(), "Zeichentrick", 12) == 0 ||
+               strncasecmp(value->getStrValue(), "Trickfilmkomödie", 16) == 0 ||
+               strncasecmp(value->getStrValue(), "Trickfilm", 12) == 0)
+         row->setValue("NGENRE", "Trickfilm");
+      else if (strncasecmp(value->getStrValue(), "Sci-Fi", 6) == 0 ||
+               strncasecmp(value->getStrValue(), "Science-Fiction", 15) == 0 ||
+               strncasecmp(value->getStrValue(), "Science Fiction", 15) == 0
+         )
+         row->setValue("NGENRE", "Science-Fiction");
+      else if (strncasecmp(value->getStrValue(), "Comedy", 6) == 0)
+         row->setValue("NGENRE", "Comedy");
+      else if (strncasecmp(value->getStrValue(), "Comic", 5) == 0)
+         row->setValue("NGENRE", "Comic");
+      else if (strncasecmp(value->getStrValue(), "Doku", 5) == 0 ||
+               strncasecmp(value->getStrValue(), "Naturdoku", 9) == 0 ||
+               strncasecmp(value->getStrValue(), "Dokumentar", 10) == 0 ||
+               strncasecmp(value->getStrValue(), "Tierdoku", 8) == 0)
+         row->setValue("NGENRE", "Dokumentation");
+      else if (strncasecmp(value->getStrValue(), "Abenteuer", 9) == 0 ||
+               strncasecmp(value->getStrValue(), "Jugendabenteuer", 15) == 0 ||
+               strncasecmp(value->getStrValue(), "Indianerabenteuer", 17) == 0 ||
+               strncasecmp(value->getStrValue(), "Dschungelabenteuer", 18) == 0)
+         row->setValue("NGENRE", "Abenteuer");
+      else if (strncasecmp(value->getStrValue(), "Superhelden", 11) == 0)
+         row->setValue("NGENRE", "Superhelden");
+      else if (strncasecmp(value->getStrValue(), "Agenten", 7) == 0)
+         row->setValue("NGENRE", "Agenten");
+      else if (strncasecmp(value->getStrValue(), "Drama", 7) == 0 ||
+               strncasecmp(value->getStrValue(), "Gefängnisdrama", 14) == 0 ||
+               strncasecmp(value->getStrValue(), "Familiendrama", 13) == 0 ||
+               strncasecmp(value->getStrValue(), "Kriegsdrama", 11) == 0 ||
+               strncasecmp(value->getStrValue(), "Gewaltdrama", 11 == 0))
+         row->setValue("NGENRE", "Drama");
+      else if (strncasecmp(value->getStrValue(), "Biografie", 9) == 0)
+         row->setValue("NGENRE", "Biografie");
+      else if (strncasecmp(value->getStrValue(), "Erotik", 6) == 0)
+         row->setValue("NGENRE", "Erotik");
+      else if (strncasecmp(value->getStrValue(), "Fantasy", 7) == 0)
+         row->setValue("NGENRE", "Fantasy");
+      else if (strncasecmp(value->getStrValue(), "Horror", 6) == 0 ||
+               strncasecmp(value->getStrValue(), "Vampirhorror", 12) == 0)
+         row->setValue("NGENRE", "Horror");
+      else if (strncasecmp(value->getStrValue(), "Historien", 9) == 0)
+         row->setValue("NGENRE", "Historien");
+      else if (strncasecmp(value->getStrValue(), "Krimi", 5) == 0)
+         row->setValue("NGENRE", "Krimi");
+      else if (strncasecmp(value->getStrValue(), "Musik", 5) == 0)
+         row->setValue("NGENRE", "Musik");
+      else if (strncasecmp(value->getStrValue(), "Musical", 7) == 0)
+         row->setValue("NGENRE", "Musical");
+      else if (strncasecmp(value->getStrValue(), "Mystery", 7) == 0)
+         row->setValue("NGENRE", "Mystery");
+      else if (strncasecmp(value->getStrValue(), "Militär", 7) == 0)
+         row->setValue("NGENRE", "Militär");
+      else if (strncasecmp(value->getStrValue(), "Psycho", 6) == 0)
+         row->setValue("NGENRE", "Psycho");
+      else if (strncasecmp(value->getStrValue(), "Thriller", 8) == 0 ||
+               strncasecmp(value->getStrValue(), "Politthriller", 13) == 0)
+         row->setValue("NGENRE", "Thriller");
+      else if (strncasecmp(value->getStrValue(), "Western", 7) == 0 ||
+               strncasecmp(value->getStrValue(), "Wildwestabenteuer", 17) == 0)
+         row->setValue("NGENRE", "Western");
+      else
+         row->setValue("NGENRE", value->getStrValue());
+   }
+
+   if (row->hasValue("CATEGORY", "unknown"))
+      row->setValue("GROUP", cString::sprintf("%s", row->getStrValue("NGENRE")));
+   else if (row->hasValue("NGENRE", "unknown"))
+      row->setValue("GROUP", cString::sprintf("%s", row->getStrValue("CATEGORY")));
+   else
+      row->setValue("GROUP", cString::sprintf("%s / %s",
+                                              row->getStrValue("CATEGORY"),
+                                              row->getStrValue("NGENRE")));
+
    return success;
 }
 

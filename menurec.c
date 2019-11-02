@@ -5,6 +5,13 @@
  *
  */
 
+/*
+ Inbetribnahme:
+    truncate recordinglist; commit;
+    #> systemctrl start vdr
+    #> svdrpsend PLUG epg2vdr UPDREC
+*/
+
 #include <vdr/menuitems.h>
 #include <vdr/status.h>
 #include <vdr/menu.h>
@@ -17,6 +24,10 @@
 #include "menu.h"
 #include "ttools.h"
 
+//***************************************************************************
+// Item Base Class
+//***************************************************************************
+
 class cMenuDbRecordingItemBase : public cOsdItem
 {
    public:
@@ -26,7 +37,7 @@ class cMenuDbRecordingItemBase : public cOsdItem
 
       virtual const char* Name()            const { return name; }
       virtual const cRecording* Recording() const = 0;
-      virtual bool IsDirectory()            const = 0;
+      virtual bool isDirectory()            const = 0;
 
    protected:
 
@@ -34,7 +45,7 @@ class cMenuDbRecordingItemBase : public cOsdItem
 };
 
 //***************************************************************************
-// Class cMenuDbRecordingItem
+// Class Recording Item
 //***************************************************************************
 
 class cMenuDbRecordingItem : public cMenuDbRecordingItemBase
@@ -45,17 +56,14 @@ class cMenuDbRecordingItem : public cMenuDbRecordingItemBase
       virtual ~cMenuDbRecordingItem();
 
 
-      int Level()                   const { return level; }
-
       const cRecording* Recording() const override { return recording; }
-      bool IsDirectory()            const override { return false; }
+      bool isDirectory()            const override { return false; }
       void SetRecording(const cRecording* Recording) { recording = Recording; }
       virtual void SetMenuItem(cSkinDisplayMenu* DisplayMenu, int Index, bool Current, bool Selectable);
 
    private:
 
       const cRecording* recording {nullptr};
-      int level {0};
       cMenuDb* menuDb {nullptr};
 };
 
@@ -65,31 +73,28 @@ cMenuDbRecordingItem::cMenuDbRecordingItem(cMenuDb* db, const cRecording* Record
    recording = Recording;
    name = nullptr;
 
+   int level = 0;
+
    for (const char* p = Recording->Title(); *p; p++)
       if (*p == '~')
          level++;
 
    SetText(Recording->Title('\t', true, level));
    tell(0, "Added recording for file '%s'", Recording->Title());
-
-   // a folder?
-
-   // if (*Text() == '\t')
-   //    name = strdup(Text() + 2); // 'Text() + 2' to skip the two '\t'
 }
 
 cMenuDbRecordingItem::~cMenuDbRecordingItem()
 {
 }
 
-void cMenuDbRecordingItem::SetMenuItem(cSkinDisplayMenu *DisplayMenu, int Index, bool Current, bool Selectable)
+void cMenuDbRecordingItem::SetMenuItem(cSkinDisplayMenu* DisplayMenu, int Index, bool Current, bool Selectable)
 {
-  if (!DisplayMenu->SetItemRecording(recording, Index, Current, Selectable, level, 0, 0))
-     DisplayMenu->SetItem(Text(), Index, Current, Selectable);
+   if (!DisplayMenu->SetItemRecording(recording, Index, Current, Selectable, 0/*level*/, 0, 0))
+      DisplayMenu->SetItem(Text(), Index, Current, Selectable);
 }
 
 //***************************************************************************
-// Class cMenuDbRecordingItem
+// Class Folder Item
 //***************************************************************************
 
 class cMenuDbRecordingFolderItem : public cMenuDbRecordingItemBase
@@ -102,7 +107,7 @@ class cMenuDbRecordingFolderItem : public cMenuDbRecordingItemBase
       // void IncrementCounter(bool New);
 
       const cRecording* Recording() const override { return tmpRecording; }
-      bool IsDirectory()            const override { return true; }
+      bool isDirectory()            const override { return true; }
       virtual void SetMenuItem(cSkinDisplayMenu* DisplayMenu, int Index, bool Current, bool Selectable);
 
    private:
@@ -149,37 +154,45 @@ void cMenuDbRecordingFolderItem::SetMenuItem(cSkinDisplayMenu* DisplayMenu, int 
 //***************************************************************************
 // Class cMenuDbRecordings
 //***************************************************************************
+//***************************************************************************
+// Object
+//***************************************************************************
 
-cString cMenuDbRecordings::path;
-cString cMenuDbRecordings::fileName;
-
-cMenuDbRecordings::cMenuDbRecordings(const char* Base, int Level, bool OpenSubMenus)
+cMenuDbRecordings::cMenuDbRecordings(const char* Base, int Level, const char* Group, bool OpenSubMenus)
    : cOsdMenu(Base ? Base : tr("Recordings"), 9, 6, 6)
 {
    menuDb = new cMenuDb;
+   level = Level;
 
    SetMenuCategory(mcRecording);
+   group = Group ? strdup(Group) : nullptr;
    base = Base ? strdup(Base) : nullptr;
-   level = Setup.RecordingDirs ? Level : -1;
 
    Display(); // this keeps the higher level menus from showing up briefly when pressing 'Back' during replay
 
+   tell(0, "open recording menu '%s' for group '%s'", base, group ? group : "");
+
    if (menuDb->dbConnected())
    {
-      LoadGrouped(); // LoadPlain();
+      if (!isEmpty(group))
+         LoadGroup(group);
+      else
+         LoadGrouped();
+
+      // LoadPlain();
    }
 
    if (Current() < 0)
       SetCurrent(First());
 
-   else if (OpenSubMenus && (cReplayControl::LastReplayed() || *path || *fileName))
-   {
-      if (!*path || Level < strcountchr(path, FOLDERDELIMCHAR))
-      {
-         if (Open(true))
-            return;
-      }
-   }
+   // else if (OpenSubMenus && (cReplayControl::LastReplayed()))
+   // {
+   //    if (!*path || Level < strcountchr(path, FOLDERDELIMCHAR))
+   //    {
+   //       if (Open(true))
+   //          return;
+   //    }
+   // }
 
    Display();
    SetHelpKeys();
@@ -189,16 +202,14 @@ cMenuDbRecordings::~cMenuDbRecordings()
 {
    // cMenuDbRecordingItem* ri = (cMenuDbRecordingItem*)Get(Current());
 
-   // if (ri && !ri->IsDirectory())
-   //    SetRecording(ri->Recording()->FileName());
-
    delete menuDb;
 
+   free(group);
    free(base);
 }
 
 //***************************************************************************
-//
+// Set Help Keys
 //***************************************************************************
 
 void cMenuDbRecordings::SetHelpKeys(void)
@@ -208,7 +219,7 @@ void cMenuDbRecordings::SetHelpKeys(void)
 
   if (ri)
   {
-     if (ri->IsDirectory())
+     if (ri->isDirectory())
         NewHelpKeys = 1;
      else
         NewHelpKeys = 2;
@@ -240,16 +251,9 @@ void cMenuDbRecordings::LoadGrouped(bool Refresh)
 
    for (int res = menuDb->selectRecordingsGrouped->find(); res; res = menuDb->selectRecordingsGrouped->fetch())
    {
-      char* folderTitle {nullptr};
-
-      asprintf(&folderTitle, "%s / %s",
-               menuDb->recordingListDb->getValue("CATEGORY")->isNull() ? "unknown" : menuDb->recordingListDb->getStrValue("CATEGORY"),
-               menuDb->recordingListDb->getValue("GENRE")->isNull() ? "unknown" : menuDb->recordingListDb->getStrValue("GENRE"));
-
-      tell(0, "Added recording folder '%s'", folderTitle);
-      Add(new cMenuDbRecordingFolderItem(menuDb, folderTitle, menuDb->groupCount.getIntValue()));
-
-      free(folderTitle);
+      const char* group = menuDb->recordingListDb->getStrValue("GROUP");
+      tell(0, "Added recording folder '%s'", group);
+      Add(new cMenuDbRecordingFolderItem(menuDb, group, menuDb->groupCount.getIntValue()));
    }
 
    menuDb->selectRecordingsGrouped->freeResult();
@@ -258,6 +262,51 @@ void cMenuDbRecordings::LoadGrouped(bool Refresh)
       Display();
 
    return ;
+}
+
+//***************************************************************************
+// Load recordings of a Group
+//***************************************************************************
+
+void cMenuDbRecordings::LoadGroup(const char* group, bool Refresh)
+{
+   if (!cRecordings::GetRecordingsRead(recordingsStateKey))
+      return ;
+
+   recordingsStateKey.Remove();
+   cRecordings* Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey);
+
+   if (!Recordings)
+   {
+      tell(0, "Fatal: Can't get recording lock");
+      return ;
+   }
+
+   Clear();
+
+   menuDb->recordingListDb->clear();
+   menuDb->recordingListDb->setValue("GROUP", group);
+
+   for (int res = menuDb->selectRecordingByGroup->find(); res; res = menuDb->selectRecordingByGroup->fetch())
+   {
+      char* fileName {nullptr};
+      asprintf(&fileName, "%s/%s", cVideoDirectory::Name(), menuDb->recordingListDb->getStrValue("PATH"));
+      const cRecording* recording = Recordings->GetByName(fileName);
+
+      if (recording)
+         Add(new cMenuDbRecordingItem(menuDb, recording));
+      else
+         tell(0, "Error: Recording for file '%s' not found, skipped", fileName);
+
+      free(fileName);
+   }
+
+   menuDb->selectRecordingByGroup->freeResult();
+
+   recordingsStateKey.Remove(false);
+
+   if (Refresh)
+      Display();
 }
 
 //***************************************************************************
@@ -289,10 +338,7 @@ void cMenuDbRecordings::LoadPlain(bool Refresh)
       const cRecording* recording = Recordings->GetByName(fileName);
 
       if (recording)
-      {
-         // tell(0, "Added recording for file '%s'", fileName);
          Add(new cMenuDbRecordingItem(menuDb, recording));
-      }
       else
          tell(0, "Fatal: Recording for file '%s' not found", fileName);
 
@@ -305,123 +351,17 @@ void cMenuDbRecordings::LoadPlain(bool Refresh)
 
    if (Refresh)
       Display();
-
-   return ;
-
-   /*
-   // ------------------------------------------------------
-
-   if (!cRecordings::GetRecordingsRead(recordingsStateKey))
-      return ;
-
-   recordingsStateKey.Remove();
-   const char* CurrentRecording = *fileName ? *fileName : cReplayControl::LastReplayed();
-   cRecordings* Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey); // write access is necessary for sorting!
-   cMenuDbRecordingItem *LastItem = NULL;
-
-   if (!CurrentRecording)
-   {
-      if (cMenuDbRecordingItem *ri = (cMenuDbRecordingItem*)Get(Current()))
-         CurrentRecording = ri->Recording()->FileName();
-   }
-
-   int current = Current();
-   Clear();
-   GetRecordingsSortMode(DirectoryName());
-   Recordings->Sort();
-
-   for (const cRecording *Recording = Recordings->First(); Recording; Recording = Recordings->Next(Recording))
-   {
-      if ((!filter || filter->Filter(Recording)) && (!base || (strstr(Recording->Name(), base) == Recording->Name() && Recording->Name()[strlen(base)] == FOLDERDELIMCHAR)))
-      {
-         cMenuDbRecordingItem *Item = new cMenuDbRecordingItem(Recording, level);
-         cMenuDbRecordingItem *LastDir = NULL;
-
-         if (Item->IsDirectory())
-         {
-            // Sorting may ignore non-alphanumeric characters, so we need to explicitly handle directories in case they only differ in such characters:
-
-            for (cMenuDbRecordingItem* p = LastItem; p; p = dynamic_cast<cMenuDbRecordingItem*>(p->Prev()))
-            {
-               if (p->Name() && strcmp(p->Name(), Item->Name()) == 0)
-               {
-                  LastDir = p;
-                  break;
-               }
-            }
-         }
-
-         if (*Item->Text() && !LastDir)
-         {
-            Add(Item);
-            LastItem = Item;
-
-            if (Item->IsDirectory())
-               LastDir = Item;
-         }
-         else
-            delete Item;
-
-         if (LastItem || LastDir)
-         {
-            if (*path)
-            {
-               if (strcmp(path, Recording->Folder()) == 0)
-                  SetCurrent(LastDir ? LastDir : LastItem);
-            }
-            else if (CurrentRecording && strcmp(CurrentRecording, Recording->FileName()) == 0)
-               SetCurrent(LastDir ? LastDir : LastItem);
-         }
-
-         if (LastDir)
-            LastDir->IncrementCounter(Recording->IsNew());
-      }
-   }
-
-   if (Current() < 0)
-      SetCurrent(Get(current));      // last resort, in case the recording was deleted
-
-   SetMenuSortMode(RecordingsSortMode == rsmName ? msmName : msmTime);
-   recordingsStateKey.Remove(false); // sorting doesn't count as a real modification
-
-   if (Refresh)
-      Display();
-   */
 }
 
 //***************************************************************************
-//
+// Open
 //***************************************************************************
-
-void cMenuDbRecordings::SetPath(const char *Path)
-{
-   path = Path;
-}
-
-void cMenuDbRecordings::SetRecording(const char *FileName)
-{
-   fileName = FileName;
-}
-
-cString cMenuDbRecordings::DirectoryName(void)
-{
-  cString d(cVideoDirectory::Name());
-
-  if (base)
-  {
-     char *s = ExchangeChars(strdup(base), true);
-     d = AddDirectory(d, s);
-     free(s);
-  }
-
-  return d;
-}
 
 bool cMenuDbRecordings::Open(bool OpenSubMenus)
 {
   cMenuDbRecordingItemBase* ri = (cMenuDbRecordingItemBase*)Get(Current());
 
-  if (ri && ri->IsDirectory() && (!*path || strcountchr(path, FOLDERDELIMCHAR) > 0))
+  if (ri && ri->isDirectory())
   {
      const char* t = ri->Name();
      cString buffer;
@@ -432,12 +372,17 @@ bool cMenuDbRecordings::Open(bool OpenSubMenus)
         t = buffer;
      }
 
-     AddSubMenu(new cMenuDbRecordings(t, level + 1, OpenSubMenus));
+     AddSubMenu(new cMenuDbRecordings(t, level+1, ri->Name(), OpenSubMenus));
+
      return true;
   }
 
   return false;
 }
+
+//***************************************************************************
+// Play
+//***************************************************************************
 
 eOSState cMenuDbRecordings::Play(void)
 {
@@ -445,7 +390,7 @@ eOSState cMenuDbRecordings::Play(void)
 
   if (ri)
   {
-     if (ri->IsDirectory())
+     if (ri->isDirectory())
         Open();
      else
      {
@@ -457,6 +402,10 @@ eOSState cMenuDbRecordings::Play(void)
   return osContinue;
 }
 
+//***************************************************************************
+// Rewind
+//***************************************************************************
+
 eOSState cMenuDbRecordings::Rewind(void)
 {
    if (HasSubMenu() || Count() == 0)
@@ -464,7 +413,7 @@ eOSState cMenuDbRecordings::Rewind(void)
 
    cMenuDbRecordingItemBase *ri = (cMenuDbRecordingItemBase*)Get(Current());
 
-   if (ri && !ri->IsDirectory())
+   if (ri && !ri->isDirectory())
    {
       cDevice::PrimaryDevice()->StopReplay(); // must do this first to be able to rewind the currently replayed recording
       cResumeFile ResumeFile(ri->Recording()->FileName(), ri->Recording()->IsPesRecording());
@@ -475,81 +424,11 @@ eOSState cMenuDbRecordings::Rewind(void)
   return osContinue;
 }
 
-/*
-eOSState cMenuDbRecordings::Delete(void)
-{
-  if (HasSubMenu() || Count() == 0)
-     return osContinue;
-  cMenuDbRecordingItem *ri = (cMenuDbRecordingItem *)Get(Current());
-  if (ri && !ri->IsDirectory()) {
-     if (Interface->Confirm(tr("Delete recording?"))) {
-        if (cRecordControl *rc = cRecordControls::GetRecordControl(ri->Recording()->FileName())) {
-           if (Interface->Confirm(tr("Timer still recording - really delete?"))) {
-              if (cTimer *Timer = rc->Timer()) {
-                 LOCK_TIMERS_WRITE;
-                 Timer->Skip();
-                 cRecordControls::Process(Timers, time(NULL));
-                 if (Timer->IsSingleEvent()) {
-                    Timers->Del(Timer);
-                    isyslog("deleted timer %s", *Timer->ToDescr());
-                    }
-                 }
-              }
-           else
-              return osContinue;
-           }
-        cString FileName;
-        {
-          LOCK_RECORDINGS_READ;
-          if (const cRecording *Recording = Recordings->GetByName(ri->Recording()->FileName())) {
-             FileName = Recording->FileName();
-             if (RecordingsHandler.GetUsage(FileName)) {
-                if (!Interface->Confirm(tr("Recording is being edited - really delete?")))
-                   return osContinue;
-                }
-             }
-        }
-        RecordingsHandler.Del(FileName); // must do this w/o holding a lock, because the cleanup section in cDirCopier::Action() might request one!
-        if (cReplayControl::NowReplaying() && strcmp(cReplayControl::NowReplaying(), FileName) == 0)
-           cControl::Shutdown();
-        cRecordings *Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey);
-        Recordings->SetExplicitModify();
-        cRecording *Recording = Recordings->GetByName(FileName);
-        if (!Recording || Recording->Delete()) {
-           cReplayControl::ClearLastReplayed(FileName);
-           Recordings->DelByName(FileName);
-           cOsdMenu::Del(Current());
-           SetHelpKeys();
-           cVideoDiskUsage::ForceCheck();
-           Recordings->SetModified();
-           recordingsStateKey.Remove();
-           Display();
-           if (!Count())
-              return osUserRecEmpty;
-           return osUserRecRemoved;
-           }
-        else
-           Skins.Message(mtError, tr("Error while deleting recording!"));
-        recordingsStateKey.Remove();
-        }
-     }
-  return osContinue;
-}
-*/
-/*
-eOSState cMenuDbRecordings::Info(void)
-{
-  if (HasSubMenu() || Count() == 0)
-     return osContinue;
-  if (cMenuDbRecordingItem *ri = (cMenuDbRecordingItem *)Get(Current())) {
-     if (ri->IsDirectory())
-        return AddSubMenu(new cMenuPathEdit(cString(ri->Recording()->Name(), strchrn(ri->Recording()->Name(), FOLDERDELIMCHAR, ri->Level() + 1))));
-     else
-        return AddSubMenu(new cMenuRecording(ri->Recording(), true));
-     }
-  return osContinue;
-}
-*/
+
+//***************************************************************************
+// Commands
+//***************************************************************************
+
 eOSState cMenuDbRecordings::Commands(eKeys Key)
 {
    if (HasSubMenu() || Count() == 0)
@@ -557,7 +436,7 @@ eOSState cMenuDbRecordings::Commands(eKeys Key)
 
    cMenuDbRecordingItemBase* ri = (cMenuDbRecordingItemBase*)Get(Current());
 
-   if (ri && !ri->IsDirectory())
+   if (ri && !ri->isDirectory())
    {
       cMenuCommands *menu;
       eOSState state = AddSubMenu(menu = new cMenuCommands(tr("Recording commands"), &RecordingCommands, cString::sprintf("\"%s\"", *strescape(ri->Recording()->FileName(), "\\\"$"))));
@@ -571,12 +450,20 @@ eOSState cMenuDbRecordings::Commands(eKeys Key)
    return osContinue;
 }
 
+//***************************************************************************
+// Sort
+//***************************************************************************
+
 eOSState cMenuDbRecordings::Sort()
 {
    LoadPlain();
 
    return osContinue;
 }
+
+//***************************************************************************
+// ProcessKey
+//***************************************************************************
 
 eOSState cMenuDbRecordings::ProcessKey(eKeys Key)
 {
@@ -591,9 +478,6 @@ eOSState cMenuDbRecordings::ProcessKey(eKeys Key)
         case kOk:      return Play();
         case kRed:     return (helpKeys > 1 && RecordingCommands.Count()) ? Commands() : Play();
         case kGreen:   return Rewind();
-        // case kYellow: return Delete();
-        case kInfo:
-        // case kBlue:   return Info();
         case k0:       return Sort();
         case k1:
         case k2:
@@ -608,56 +492,6 @@ eOSState cMenuDbRecordings::ProcessKey(eKeys Key)
         default: break;
      }
   }
-
-  /*
-  else if (state == osUserRecRenamed) {
-     // a recording was renamed (within the same folder), so let's refresh the menu
-     CloseSubMenu(false); // this is the cMenuRecordingEdit/cMenuPathEdit
-     path = NULL;
-     fileName = NULL;
-     state = osContinue;
-     }
-  else if (state == osUserRecMoved) {
-     // a recording was moved to a different folder, so let's delete the old item
-     CloseSubMenu(false); // this is the cMenuRecordingEdit/cMenuPathEdit
-     path = NULL;
-     fileName = NULL;
-     cOsdMenu::Del(Current());
-     Set(); // the recording might have been moved into a new subfolder of this folder
-     if (!Count())
-        return osUserRecEmpty;
-     Display();
-     state = osUserRecRemoved;
-     }
-  else if (state == osUserRecRemoved) {
-     // a recording was removed from a sub folder, so update the current item
-     if (cOsdMenu *m = SubMenu()) {
-        if (cMenuDbRecordingItem *ri = (cMenuDbRecordingItem *)Get(Current())) {
-           if (cMenuDbRecordingItem *riSub = (cMenuDbRecordingItem *)m->Get(m->Current()))
-              ri->SetRecording(riSub->Recording());
-           }
-        }
-     // no state change here, this report goes upstream!
-     }
-  else if (state == osUserRecEmpty) {
-     // a subfolder became empty, so let's go back up
-     CloseSubMenu(false); // this is the now empty submenu
-     cOsdMenu::Del(Current()); // the menu entry of the now empty subfolder
-     Set(); // in case a recording was moved into a new subfolder of this folder
-     if (base && !Count()) // base: don't go up beyond the top level Recordings menu
-        return state;
-     Display();
-     state = osContinue;
-     }
-  */
-
-  // if (!HasSubMenu())
-  // {
-  //    Set(true);
-
-  //    if (Key != kNone)
-  //       SetHelpKeys();
-  // }
 
   return state;
 }
