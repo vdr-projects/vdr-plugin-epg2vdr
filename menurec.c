@@ -73,7 +73,7 @@ cMenuDbRecordingItem::cMenuDbRecordingItem(cMenuDb* db, const cRecording* Record
    recording = Recording;
    name = nullptr;
 
-   int level = 0;
+   uint level {0};
 
    for (const char* p = Recording->Title(); *p; p++)
       if (*p == '~')
