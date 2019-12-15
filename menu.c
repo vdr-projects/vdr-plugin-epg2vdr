@@ -400,7 +400,6 @@ int cMenuDb::initDb()
    //   from recordinglist where
    //      (state <> 'D' or state is null)
    //   and epglvr(title, ?) < 50
-//   // order by lv
 
    selectRecordingForEventByLv = new cDbStatement(recordingListDb);
 
