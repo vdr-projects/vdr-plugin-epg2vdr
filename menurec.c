@@ -6,7 +6,7 @@
  */
 
 /*
- Inbetribnahme:
+ Inbetriebnahme:
     truncate recordinglist; commit;
     #> systemctrl start vdr
     #> svdrpsend PLUG epg2vdr UPDREC
