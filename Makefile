@@ -66,11 +66,17 @@ OBJS = $(PLUGIN).o \
        status.o ttools.o svdrpclient.o \
        menu.o menusched.o menutimers.o menudone.o menusearchtimer.o menurec.o
 
-LIBS  = $(HLIB)
+LIBS += $(HLIB)
 LIBS += -lrt -larchive -lcrypto
 LIBS += $(shell pkg-config --libs uuid)
 LIBS += $(shell pkg-config --libs tinyxml2)
-LIBS += $(shell mysql_config --libs_r) $(shell python-config --libs) $(shell pkg-config --libs jansson)
+LIBS += $(shell mysql_config --libs_r)
+
+ifdef USEPYTHON
+  CFLAGS += $(shell $(PYTHON)-config --includes)
+  LIBS += $(PYTHON_LIBS)
+endif
+LIBS += $(shell pkg-config --libs jansson)
 
 EPG2VDR_DATA_DIR = "/var/cache/vdr"
 
