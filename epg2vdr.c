@@ -473,6 +473,9 @@ int cPluginEPG2VDR::initDb()
    //    where
    //          (t.state in ('P','R') or t.state is null)
    //      and t.vdruuid = v.uuid
+   //      and t.type = 'R'
+   //      and t.vdruuid = v.uuid
+   //     order by _starttime
 
    selectTimers = new cDbStatement(timerDb);
 
