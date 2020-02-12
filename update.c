@@ -2007,6 +2007,7 @@ int cUpdate::cleanupPictures()
    char* pdir;
    int iCount = 0;
    int lCount = 0;
+   int lwCount = 0;
 
    imageRefDb->countWhere("", iCount);
 
@@ -2136,14 +2137,14 @@ int cUpdate::cleanupPictures()
       if (isLink(pdir) && (fullreload || !fileExists(pdir)))
       {
          if (!removeFile(pdir))
-            lCount++;
+            lwCount++;
       }
 
       free(pdir);
    }
 
    closedir(dir);
-   tell(1, "Cleanup finished, removed (%d) images and (%d) symlinks", iCount, lCount);
+   tell(1, "Cleanup finished, removed (%d) images, (%d) symlinks and (%d) broken symlinks", iCount, lCount, lwCount);
 
    return success;
 }
