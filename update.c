@@ -2114,6 +2114,7 @@ int cUpdate::cleanupPictures()
          }
       }
 
+      selectEventById->freeResult();
       free(pdir);
    }
 
