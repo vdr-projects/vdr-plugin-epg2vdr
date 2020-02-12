@@ -977,7 +977,6 @@ int removeFile(const char* filename)
    if (unlink(filename) != 0)
    {
       tell(0, "Can't remove file '%s', '%s'", filename, strerror(errno));
-
       return 1;
    }
 
@@ -1027,6 +1026,7 @@ xsltStylesheetPtr loadXSLT(const char* name, const char* path, int utf8)
       tell(0, "Info: Stylesheet '%s' loaded", xsltfile);
 
    free(xsltfile);
+
    return stylesheet;
 }
 #endif

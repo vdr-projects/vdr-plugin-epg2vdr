@@ -2087,6 +2087,37 @@ int cUpdate::cleanupPictures()
    if (!dbConnected(yes))
       return fail;
 
+   tell(1, "Remove %s symlinks", fullreload ? "all" : "old");
+
+   // -----------------------
+   // remove unused symlinks
+
+   if (!(dir = opendir(epgimagedir)))
+   {
+      tell(1, "Can't open directory '%s', '%s'", epgimagedir, strerror(errno));
+      return done;
+   }
+
+   while ((dirent = readdir(dir)))
+   {
+      asprintf(&pdir, "%s/%s", epgimagedir, dirent->d_name);
+
+      if (isLink(pdir))
+      {
+         useeventsDb->setValue("USEID", atoi(dirent->d_name));
+
+         if (fullreload || !selectEventById->find())
+         {
+            if (!removeFile(pdir))
+               lCount++;
+         }
+      }
+
+      free(pdir);
+   }
+
+   closedir(dir);
+
    // -----------------------
    // remove wasted symlinks
 
@@ -2096,15 +2127,8 @@ int cUpdate::cleanupPictures()
       return done;
    }
 
-   tell(1, "Remove %s symlinks", fullreload ? "all" : "old");
-
    while ((dirent = readdir(dir)))
    {
-      // check extension
-
-      if (strncmp(dirent->d_name + strlen(dirent->d_name) - strlen(ext), ext, strlen(ext)) != 0)
-         continue;
-
       asprintf(&pdir, "%s/%s", epgimagedir, dirent->d_name);
 
       // fileExists use access() which dereference links!
@@ -2122,28 +2146,4 @@ int cUpdate::cleanupPictures()
    tell(1, "Cleanup finished, removed (%d) images and (%d) symlinks", iCount, lCount);
 
    return success;
-}
-
-//***************************************************************************
-// Link Needed
-//***************************************************************************
-
-int cUpdate::pictureLinkNeeded(const char* linkName)
-{
-   int found;
-
-   if (!dbConnected())
-      return yes;
-
-   // we don't need to patch the linkname "123456_0.jpg"
-   // since atoi() stops at the first non numerical character ...
-
-   imageRefDb->clear();
-   imageRefDb->setValue("LFN", 0L);
-   imageRefDb->setBigintValue("EVENTID", atol(linkName));
-
-   found = imageRefDb->find();
-   imageRefDb->reset();
-
-   return found;
 }
