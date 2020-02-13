@@ -6,6 +6,7 @@
  */
 
 #include <locale.h>
+#include <unordered_set>
 
 #include <vdr/videodir.h>
 #include <vdr/tools.h>
@@ -506,6 +507,22 @@ int cUpdate::initDb()
 
    status += selectEventById->prepare();
 
+   // select event active events
+
+   selectAllEvents = new cDbStatement(useeventsDb);
+
+   // select * from eventsview
+   //      where useid = ?
+   //        and updflg in (.....)
+
+   selectAllEvents->build("select ");
+   selectAllEvents->bind("USEID", cDBS::bndOut);
+   selectAllEvents->build(" from %s where ", useeventsDb->TableName());
+   selectAllEvents->build("%s in (%s)",
+                          useeventsDb->getField("UPDFLG")->getDbName(), Us::getNeeded());
+
+   status += selectAllEvents->prepare();
+
    // ...
 
    // select stream, type, lang, description
@@ -790,6 +807,7 @@ int cUpdate::exitDb()
    delete selectAllImages;           selectAllImages = 0;
    delete selectUpdEvents;           selectUpdEvents = 0;
    delete selectEventById;           selectEventById = 0;
+   delete selectAllEvents;           selectAllEvents = 0;
    delete selectAllChannels;         selectAllChannels = 0;
    delete selectChannelById;         selectChannelById = 0;
    delete markUnknownChannel;        markUnknownChannel = 0;
@@ -2007,7 +2025,6 @@ int cUpdate::cleanupPictures()
    char* pdir;
    int iCount = 0;
    int lCount = 0;
-   int lwCount = 0;
 
    imageRefDb->countWhere("", iCount);
 
@@ -2085,13 +2102,23 @@ int cUpdate::cleanupPictures()
    delete stmt;
    closedir(dir);
 
-   if (!dbConnected(yes))
-      return fail;
-
-   tell(1, "Remove %s symlinks", fullreload ? "all" : "old");
-
    // -----------------------
    // remove unused symlinks
+
+   tell(1, "Cleanup %s symlinks", fullreload ? "all" : "old");
+
+   std::unordered_set<uint> useIds;
+
+   if (!fullreload)
+   {
+      if (!dbConnected(yes))
+         return fail;
+
+      for (int res = selectAllEvents->find(); res; res = selectAllEvents->fetch())
+         useIds.insert(useeventsDb->getIntValue("USEID"));
+
+      selectAllEvents->freeResult();
+   }
 
    if (!(dir = opendir(epgimagedir)))
    {
@@ -2105,47 +2132,25 @@ int cUpdate::cleanupPictures()
 
       if (isLink(pdir))
       {
-         useeventsDb->setValue("USEID", atoi(dirent->d_name));
+         if (fullreload || !fileExists(pdir))
+         {
+            if (!removeFile(pdir))
+               lCount++;
+         }
 
-         if (fullreload || !selectEventById->find())
+         else if (useIds.count(atoi(dirent->d_name)) == 0)
          {
             if (!removeFile(pdir))
                lCount++;
          }
       }
 
-      selectEventById->freeResult();
       free(pdir);
    }
 
    closedir(dir);
 
-   // -----------------------
-   // remove wasted symlinks
-
-   if (!(dir = opendir(epgimagedir)))
-   {
-      tell(1, "Can't open directory '%s', '%s'", epgimagedir, strerror(errno));
-      return done;
-   }
-
-   while ((dirent = readdir(dir)))
-   {
-      asprintf(&pdir, "%s/%s", epgimagedir, dirent->d_name);
-
-      // fileExists use access() which dereference links!
-
-      if (isLink(pdir) && (fullreload || !fileExists(pdir)))
-      {
-         if (!removeFile(pdir))
-            lwCount++;
-      }
-
-      free(pdir);
-   }
-
-   closedir(dir);
-   tell(1, "Cleanup finished, removed (%d) images, (%d) symlinks and (%d) broken symlinks", iCount, lCount, lwCount);
+   tell(1, "Cleanup finished, removed (%d) images and (%d) symlinks", iCount, lCount);
 
    return success;
 }

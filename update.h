@@ -284,6 +284,7 @@ class cUpdate : public cThread, public cStatus, public cParameters
       cDbStatement* selectMasterVdr;
       cDbStatement* selectAllImages;
       cDbStatement* selectUpdEvents;
+      cDbStatement* selectAllEvents {nullptr};
       cDbStatement* selectEventById;
       cDbStatement* selectAllChannels;
       cDbStatement* selectChannelById;
