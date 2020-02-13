@@ -2019,12 +2019,12 @@ int cUpdate::storePicturesToFs()
 
 int cUpdate::cleanupPictures()
 {
-   const char* ext = ".jpg";
-   struct dirent* dirent;
-   DIR* dir;
-   char* pdir;
-   int iCount = 0;
-   int lCount = 0;
+   const char* ext {".jpg"};
+   struct dirent* dirent {nullptr};
+   DIR* dir {nullptr};
+   char* pdir {nullptr};
+   int iCount {0};
+   int lCount {0};
 
    imageRefDb->countWhere("", iCount);
 
@@ -2034,26 +2034,10 @@ int cUpdate::cleanupPictures()
       return done;
    }
 
-   // -----------------------
-   // remove unused images
-
    tell(1, "Starting cleanup of images in '%s'", epgimagedir);
 
    // -----------------------
    // cleanup 'images' directory
-
-   cDbStatement* stmt = new cDbStatement(imageRefDb);
-
-   stmt->build("select ");
-   stmt->bind("FILEREF", cDBS::bndOut);
-   stmt->build(" from %s where ", imageRefDb->TableName());
-   stmt->bind("IMGNAMEFS", cDBS::bndIn | cDBS::bndSet);
-
-   if (stmt->prepare() != success)
-   {
-      delete stmt;
-      return fail;
-   }
 
    iCount = 0;
 
@@ -2065,29 +2049,43 @@ int cUpdate::cleanupPictures()
    {
       tell(1, "Can't open directory '%s', '%s'", pdir, strerror(errno));
       free(pdir);
-
       return done;
    }
 
    free(pdir);
 
-   int cnt = 0;
+   if (!dbConnected(yes))
+      return fail;
 
-   while (dbConnected() && (dirent = readdir(dir)))
+   cDbStatement stmt(imageRefDb);
+
+   stmt.build("select ");
+   stmt.bind("IMGNAMEFS", cDBS::bndOut);
+   stmt.build(" from %s", imageRefDb->TableName());
+
+   if (stmt.prepare() != success)
+      return fail;
+
+   std::unordered_set<std::string> usedRefs;
+
+   imageRefDb->clear();
+
+   for (int res = stmt.find(); res; res = stmt.fetch())
+      usedRefs.insert(imageRefDb->getStrValue("IMGNAMEFS"));
+
+   stmt.freeResult();
+
+   while ((dirent = readdir(dir)))
    {
       // check extension
 
       if (strncmp(dirent->d_name + strlen(dirent->d_name) - strlen(ext), ext, strlen(ext)) != 0)
          continue;
 
-      imageRefDb->clear();
-      imageRefDb->setValue("IMGNAMEFS", dirent->d_name);
-
-      if (!stmt->find())
+      if (usedRefs.count(dirent->d_name))
       {
          asprintf(&pdir, "%s/images/%s", epgimagedir, dirent->d_name);
-
-         tell(2, "Remove image '%s'", pdir);
+         tell(2, "Removing image '%s'", pdir);
 
          if (!removeFile(pdir))
             iCount++;
@@ -2095,11 +2093,9 @@ int cUpdate::cleanupPictures()
          free(pdir);
       }
 
-      cnt++;
-      stmt->freeResult();
+      stmt.freeResult();
    }
 
-   delete stmt;
    closedir(dir);
 
    // -----------------------
