@@ -672,6 +672,11 @@ int l2hhmm(time_t t)
    return  tm.tm_hour * 100 + tm.tm_min;
 }
 
+time_t hhmm2L(int hhmm, time_t offset)
+{
+   return ((hhmm/100) * tmeSecondsPerHour) + ((hhmm%100) * tmeSecondsPerMinute) + offset;
+}
+
 //***************************************************************************
 // HHMM to Pretty Time
 //***************************************************************************
